@@ -25,6 +25,7 @@
 .phpactor.json
 .phpunit.result.cache
 /bootstrap/cache/*.php
+/database/carbayplus.sql
 Homestead.json
 Homestead.yaml
 npm-debug.log
