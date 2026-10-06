@@ -21,8 +21,11 @@ class Tenant extends Model
     protected $fillable = [
         'name', 'logo', 'phone', 'email', 'package_id', 'main_branch_id',
         'status', 'trial_ends_at', 'momo_number', 'momo_name',
-        'paystack_public_key', 'paystack_secret_key',
+        'paystack_public_key', 'paystack_secret_key', 'billing_anchor_at',
+        'grace_period_ends_at', 'paystack_transfers_enabled',
         'cash_enabled', 'momo_enabled', 'paystack_enabled',
+        'loyalty_points_per_10', 'loyalty_reward_points', 'loyalty_reward_value',
+        'fraud_discount_threshold_pct',
     ];
 
     protected $hidden = ['paystack_secret_key'];
@@ -31,10 +34,17 @@ class Tenant extends Model
     {
         return [
             'trial_ends_at' => 'datetime',
+            'billing_anchor_at' => 'datetime',
+            'grace_period_ends_at' => 'datetime',
             'paystack_secret_key' => 'encrypted',
             'cash_enabled' => 'boolean',
             'momo_enabled' => 'boolean',
             'paystack_enabled' => 'boolean',
+            'paystack_transfers_enabled' => 'boolean',
+            'loyalty_points_per_10' => 'integer',
+            'loyalty_reward_points' => 'integer',
+            'loyalty_reward_value' => 'decimal:2',
+            'fraud_discount_threshold_pct' => 'decimal:2',
         ];
     }
 
@@ -61,6 +71,31 @@ class Tenant extends Model
     public function workers(): HasMany
     {
         return $this->hasMany(Worker::class);
+    }
+
+    public function jobs(): HasMany
+    {
+        return $this->hasMany(Job::class);
+    }
+
+    public function clients(): HasMany
+    {
+        return $this->hasMany(Client::class);
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function payouts(): HasMany
+    {
+        return $this->hasMany(Payout::class);
+    }
+
+    public function smsLogs(): HasMany
+    {
+        return $this->hasMany(SmsLog::class);
     }
 
     public function activeWorkerCount(): int

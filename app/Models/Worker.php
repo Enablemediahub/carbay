@@ -5,12 +5,14 @@ namespace App\Models;
 use App\Models\Concerns\BelongsToTenant;
 use App\Models\Concerns\BranchScoped;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Validation\ValidationException;
 
-class Worker extends Model implements BranchScoped
+class Worker extends Authenticatable implements BranchScoped
 {
     use BelongsToTenant, HasFactory;
 
@@ -35,7 +37,7 @@ class Worker extends Model implements BranchScoped
 
     protected $fillable = [
         'tenant_id', 'branch_id', 'name', 'phone', 'pin',
-        'type', 'default_share_pct', 'status',
+        'type', 'default_share_pct', 'payout_mode', 'status',
     ];
 
     protected $hidden = ['pin'];
@@ -46,6 +48,16 @@ class Worker extends Model implements BranchScoped
             'pin' => 'hashed',
             'default_share_pct' => 'decimal:2',
         ];
+    }
+
+    public function getAuthPasswordName(): string
+    {
+        return 'pin';
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return false;
     }
 
     public function branch(): BelongsTo
@@ -61,6 +73,21 @@ class Worker extends Model implements BranchScoped
     public function sales(): HasMany
     {
         return $this->hasMany(WashSale::class);
+    }
+
+    public function wallet(): HasOne
+    {
+        return $this->hasOne(Wallet::class);
+    }
+
+    public function jobs(): BelongsToMany
+    {
+        return $this->belongsToMany(Job::class, 'job_workers')->withPivot(['share_amount', 'payout_mode'])->withTimestamps();
+    }
+
+    public function payouts(): HasMany
+    {
+        return $this->hasMany(Payout::class);
     }
 
     private static function ensureTenantHasWorkerSeat(Worker $worker): void

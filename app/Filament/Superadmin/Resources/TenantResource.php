@@ -71,6 +71,8 @@ class TenantResource extends Resource
             Toggle::make('cash_enabled')->default(true),
             Toggle::make('momo_enabled')->default(false),
             Toggle::make('paystack_enabled')->default(false),
+            Toggle::make('paystack_transfers_enabled')->default(false)
+                ->visible(fn ($get): bool => (bool) $get('paystack_enabled')),
         ])->columns(2);
     }
 

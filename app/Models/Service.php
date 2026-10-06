@@ -10,7 +10,7 @@ class Service extends Model
 {
     protected $fillable = [
         'name', 'description', 'default_price', 'company_pct',
-        'worker_pct', 'is_global', 'is_active',
+        'worker_pct', 'is_global', 'is_active', 'tenant_id',
     ];
 
     protected function casts(): array

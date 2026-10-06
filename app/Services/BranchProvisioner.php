@@ -50,6 +50,7 @@ class BranchProvisioner
                     'amount' => $addonPrice,
                     'currency' => 'GHS',
                     'status' => 'pending',
+                    'due_at' => now(),
                 ]);
             }
 

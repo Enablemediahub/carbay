@@ -18,6 +18,23 @@ return [
         'token' => env('POSTMARK_TOKEN'),
     ],
 
+    'arkesel' => [
+        'api_key' => env('ARKESEL_API_KEY'),
+        'sender_id' => env('ARKESEL_SENDER_ID'),
+        'endpoint' => env('ARKESEL_ENDPOINT', 'https://sms.arkesel.com/api/v2/sms/send'),
+    ],
+
+    'plate_recognizer' => [
+        'api_token' => env('PLATE_RECOGNIZER_API_TOKEN'),
+        'endpoint' => env('PLATE_RECOGNIZER_ENDPOINT', 'https://api.platerecognizer.com/v1/plate-reader/'),
+        'regions' => array_filter(explode(',', env('PLATE_RECOGNIZER_REGIONS', 'gh'))),
+    ],
+
+    'paystack' => [
+        'endpoint' => env('PAYSTACK_INITIALIZE_ENDPOINT', 'https://api.paystack.co/transaction/initialize'),
+        'transfer_endpoint' => env('PAYSTACK_TRANSFER_ENDPOINT', 'https://api.paystack.co/transfer'),
+    ],
+
     'ses' => [
         'key' => env('AWS_ACCESS_KEY_ID'),
         'secret' => env('AWS_SECRET_ACCESS_KEY'),

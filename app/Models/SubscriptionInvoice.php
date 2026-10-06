@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
 
 class SubscriptionInvoice extends Model
 {
@@ -37,5 +38,26 @@ class SubscriptionInvoice extends Model
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    public function markPaid(): void
+    {
+        DB::transaction(function (): void {
+            $invoice = self::withoutGlobalScopes()->whereKey($this->id)->lockForUpdate()->firstOrFail();
+            if ($invoice->status !== 'paid') {
+                $invoice->update(['status' => 'paid', 'paid_at' => now()]);
+            }
+
+            $hasUnpaidInvoices = self::withoutGlobalScopes()
+                ->where('tenant_id', $invoice->tenant_id)
+                ->where('status', 'pending')
+                ->exists();
+            if (! $hasUnpaidInvoices) {
+                Tenant::withoutGlobalScopes()->whereKey($invoice->tenant_id)->update([
+                    'status' => 'active',
+                    'grace_period_ends_at' => null,
+                ]);
+            }
+        });
     }
 }

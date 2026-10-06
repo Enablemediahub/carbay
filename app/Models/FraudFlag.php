@@ -15,6 +15,8 @@ class FraudFlag extends Model implements BranchScoped
         'tenant_id',
         'branch_id',
         'wash_sale_id',
+        'job_id',
+        'cash_reconciliation_id',
         'reviewed_by',
         'flag_type',
         'description',
@@ -35,6 +37,11 @@ class FraudFlag extends Model implements BranchScoped
     public function sale(): BelongsTo
     {
         return $this->belongsTo(WashSale::class, 'wash_sale_id');
+    }
+
+    public function job(): BelongsTo
+    {
+        return $this->belongsTo(Job::class);
     }
 
     public function reviewedBy(): BelongsTo

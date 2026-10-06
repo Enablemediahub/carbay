@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class VehicleModel extends Model
 {
-    protected $fillable = ['vehicle_make_id', 'name', 'is_global'];
+    protected $fillable = ['tenant_id', 'vehicle_make_id', 'name', 'is_global'];
 
     protected function casts(): array
     {

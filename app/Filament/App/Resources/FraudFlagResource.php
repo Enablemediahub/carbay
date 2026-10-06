@@ -5,6 +5,7 @@ namespace App\Filament\App\Resources;
 use App\Filament\App\Resources\Concerns\RequiresTenantFeature;
 use App\Filament\App\Resources\FraudFlagResource\Pages\ListFraudFlags;
 use App\Models\FraudFlag;
+use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -57,7 +58,7 @@ class FraudFlagResource extends Resource
         return 'danger';
     }
 
-    public static function form(\Filament\Forms\Form $form): \Filament\Forms\Form
+    public static function form(Form $form): Form
     {
         return $form->schema([]);
     }
@@ -73,6 +74,11 @@ class FraudFlagResource extends Resource
                     default => 'gray',
                 }),
                 TextColumn::make('flag_type')->label('Signal')->badge(),
+                TextColumn::make('job.plate')->label('Plate')->default('—')->searchable(),
+                TextColumn::make('job.total_amount')->label('Job amount')->money('GHS')->default('—'),
+                TextColumn::make('cash_reconciliation_id')->label('Reconciliation')->formatStateUsing(
+                    fn ($state) => $state ? 'Cash reconciliation #'.$state : '—',
+                ),
                 TextColumn::make('sale.reference')->label('Sale reference')->default('—')->searchable(),
                 TextColumn::make('sale.payment_method')->label('Payment')->badge(),
                 TextColumn::make('sale.payment_reference')->label('Payment reference')->copyable(),

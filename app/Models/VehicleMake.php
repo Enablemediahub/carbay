@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class VehicleMake extends Model
 {
-    protected $fillable = ['name', 'is_global'];
+    protected $fillable = ['tenant_id', 'name', 'is_global'];
 
     protected function casts(): array
     {

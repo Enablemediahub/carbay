@@ -6,38 +6,36 @@ use App\Models\Tenant;
 use App\Models\Worker;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 class AuthenticateWorkerPortal
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $session = $request->session()->get('worker_portal', []);
-
-        if (! isset($session['worker_id'], $session['tenant_id'])) {
+        Auth::shouldUse('worker');
+        $worker = Auth::guard('worker')->user();
+        if (! $worker) {
             return redirect()->route('worker.login');
         }
 
-        $tenant = Tenant::withoutGlobalScopes()
-            ->whereKey($session['tenant_id'])
-            ->where('status', 'active')
-            ->first();
-
         $worker = Worker::withoutGlobalScopes()
-            ->whereKey($session['worker_id'])
-            ->where('tenant_id', $session['tenant_id'])
+            ->whereKey($worker->getKey())
             ->where('status', 'active')
             ->first();
+        $tenant = $worker
+            ? Tenant::withoutGlobalScopes()->whereKey($worker->tenant_id)->where('status', 'active')->first()
+            : null;
 
-        if (! $tenant?->hasFeature('worker_pin_login') || ! $worker) {
-            $request->session()->forget('worker_portal');
+        if (! $worker || ! $tenant?->hasFeature('worker_pin_login')) {
+            Auth::guard('worker')->logout();
 
             return redirect()
                 ->route('worker.login')
                 ->withErrors(['credentials' => 'Worker portal access is no longer available.']);
         }
 
-        $request->attributes->set('workerPortalWorker', $worker);
+        Auth::guard('worker')->setUser($worker);
 
         return $next($request);
     }

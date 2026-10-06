@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Models\AuditLog;
+use App\Models\Branch;
 use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
@@ -14,6 +15,7 @@ class AuditTrailObserver
         'pin',
         'remember_token',
         'paystack_secret_key',
+        'gateway_response_json',
     ];
 
     public function created(Model $model): void
@@ -65,7 +67,7 @@ class AuditTrailObserver
         $attributes = $model->getAttributes();
         $branchId = $attributes['branch_id'] ?? null;
 
-        if ($model instanceof \App\Models\Branch) {
+        if ($model instanceof Branch) {
             $branchId = $model->getKey();
         } elseif ($model instanceof Tenant) {
             $branchId = $attributes['main_branch_id'] ?? null;

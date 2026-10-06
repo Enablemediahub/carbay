@@ -3,14 +3,17 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
+    <meta name="theme-color" content="#0096FF">
+    <link rel="icon" href="{{ asset('carbay-favicon-512.png') }}" type="image/png">
     <title>Worker sign in · Carbay+</title>
     <style>
         :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, sans-serif; color: #173c32; background: #f4f5ec; }
         * { box-sizing: border-box; }
         body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; background: radial-gradient(ellipse at top left, #e4eddc, transparent 48%), #f4f5ec; }
         main { width: min(100%, 460px); padding: clamp(26px, 7vw, 48px); border: 1px solid #e7e9df; border-radius: 24px; background: #fff; box-shadow: 0 24px 70px #193f3018; }
-        .brand { display: flex; align-items: center; gap: 12px; font-size: 21px; font-weight: 800; letter-spacing: -.04em; }
-        .mark { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 14px; color: #153e33; background: #f5d574; }
+        .brand { display: flex; justify-content: center; }
+        .brand-logo { display: block; width: min(100%, 190px); height: auto; }
         h1 { margin: 34px 0 8px; font-size: 30px; letter-spacing: -.04em; }
         .intro { margin: 0 0 28px; color: #68766f; line-height: 1.6; }
         label { display: block; margin: 18px 0 7px; font-size: 13px; font-weight: 700; }
@@ -24,7 +27,7 @@
 </head>
 <body>
 <main>
-    <div class="brand"><span class="mark" aria-hidden="true">✦</span><span>carbay+</span></div>
+    <div class="brand"><img class="brand-logo" src="{{ asset('carbay-logo.png') }}" alt="Carbay+"></div>
     <h1>Team sign in</h1>
     <p class="intro">Use your company email, registered phone number and worker PIN to view your wash activity.</p>
 
@@ -47,5 +50,10 @@
     </form>
     <p class="privacy">Your PIN is verified securely and never displayed. Ask your manager if you need a PIN reset.</p>
 </main>
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => navigator.serviceWorker.register('{{ asset('service-worker.js') }}'));
+    }
+</script>
 </body>
 </html>

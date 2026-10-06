@@ -4,6 +4,7 @@ namespace App\Providers\Filament;
 
 use App\Filament\Auth\Login;
 use App\Filament\Superadmin\Widgets\TenantStats;
+use Filament\Enums\ThemeMode;
 use Filament\Facades\Filament;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -12,9 +13,9 @@ use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
-use Filament\Enums\ThemeMode;
-use Filament\Widgets;
 use Filament\View\PanelsRenderHook;
+use Filament\Widgets;
+use Illuminate\Contracts\View\View;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -22,7 +23,6 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-use Illuminate\Contracts\View\View;
 
 class SuperadminPanelProvider extends PanelProvider
 {
@@ -35,9 +35,9 @@ class SuperadminPanelProvider extends PanelProvider
             ->login(Login::class)
             ->brandName('Carbay+ Super Admin')
             ->brandLogo(fn (): View => view('filament.brand'))
-            ->brandLogoHeight('2.5rem')
+            ->brandLogoHeight('4rem')
             ->defaultThemeMode(ThemeMode::Light)
-            ->colors(['primary' => Color::Amber])
+            ->colors(['primary' => Color::hex('#0096FF')])
             ->viteTheme('resources/css/filament/app/theme.css')
             ->renderHook(
                 PanelsRenderHook::AUTH_LOGIN_FORM_BEFORE,

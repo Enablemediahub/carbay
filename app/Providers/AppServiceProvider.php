@@ -4,18 +4,25 @@ namespace App\Providers;
 
 use App\Auth\TenantUserProvider;
 use App\Models\Branch;
+use App\Models\CashReconciliation;
 use App\Models\Expense;
+use App\Models\Job;
+use App\Models\Payment;
+use App\Models\Payout;
 use App\Models\ServicePrice;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\WashSale;
 use App\Models\Worker;
 use App\Observers\AuditTrailObserver;
+use App\Observers\CashReconciliationObserver;
+use App\Observers\JobObserver;
+use App\Observers\PayoutObserver;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Cache\RateLimiting\Limit;
-use Illuminate\Http\Request;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -44,9 +51,15 @@ class AppServiceProvider extends ServiceProvider
             User::class,
             WashSale::class,
             Worker::class,
+            Job::class,
+            Payment::class,
+            Payout::class,
         ] as $model) {
             $model::observe(AuditTrailObserver::class);
         }
+        Job::observe(JobObserver::class);
+        CashReconciliation::observe(CashReconciliationObserver::class);
+        Payout::observe(PayoutObserver::class);
 
         RateLimiter::for('worker-pin', function (Request $request): array {
             $identity = strtolower((string) $request->input('company_email')).'|'
@@ -55,6 +68,15 @@ class AppServiceProvider extends ServiceProvider
             return [
                 Limit::perMinute(5)->by('worker-identity:'.$identity),
                 Limit::perMinute(30)->by('worker-ip:'.$request->ip()),
+            ];
+        });
+
+        RateLimiter::for('client-otp', function (Request $request): array {
+            $phone = preg_replace('/\D+/', '', (string) $request->input('phone'));
+
+            return [
+                Limit::perMinute(3)->by('client-otp:'.$request->query('tenant').'|'.$phone),
+                Limit::perMinute(20)->by('client-otp-ip:'.$request->ip()),
             ];
         });
     }

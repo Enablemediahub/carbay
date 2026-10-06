@@ -46,6 +46,12 @@ class WorkerResource extends Resource
                 'casual' => 'Casual',
             ])->required()->default('permanent'),
             TextInput::make('default_share_pct')->numeric()->suffix('%')->minValue(0)->maxValue(100)->required(),
+            Select::make('payout_mode')->options([
+                'instant' => 'Instant',
+                'daily' => 'Daily',
+                'weekly' => 'Weekly',
+                'monthly' => 'Monthly',
+            ])->required()->default('daily'),
             Select::make('status')->options([
                 'active' => 'Active',
                 'inactive' => 'Inactive',

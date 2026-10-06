@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0096FF">
+    <title>New wash job · Offline · Carbay+</title>
+    <style>
+        :root { color-scheme: light; font-family: system-ui, sans-serif; background: #f4f5ec; color: #17221d; }
+        body { margin: 0 auto; max-width: 42rem; padding: 1rem; }
+        main { margin-top: 2rem; border-radius: 1.25rem; background: white; padding: 1.25rem; box-shadow: 0 1px 4px #0002; }
+        label { display: block; margin-top: 1rem; font-weight: 600; }
+        input, textarea, button { box-sizing: border-box; width: 100%; min-height: 2.75rem; margin-top: .4rem; border: 1px solid #b8c2bc; border-radius: .75rem; padding: .7rem; font: inherit; }
+        textarea { min-height: 7rem; }
+        button { border: 0; background: linear-gradient(110deg, #0069bd, #0096ff); color: white; font-weight: 700; }
+        .notice { color: #5c665f; line-height: 1.5; }
+        #saved { min-height: 1.5rem; color: #00579e; }
+    </style>
+</head>
+<body>
+<main>
+    <p class="notice">You are offline. Save the vehicle details now, then reconnect and restore them in New wash job to complete the services, worker and payment details.</p>
+    <form id="offline-job">
+        <label for="plate">Registration plate</label>
+        <input id="plate" name="plate" autocomplete="off" placeholder="GR 1234-24" required>
+        <label for="notes">Job notes</label>
+        <textarea id="notes" name="notes" placeholder="Optional notes"></textarea>
+        <button type="submit">Save vehicle details on this device</button>
+        <p id="saved" role="status"></p>
+    </form>
+</main>
+<script>
+    const draftKey = 'carbay.offlineJobDraft';
+    const form = document.getElementById('offline-job');
+    const saved = document.getElementById('saved');
+    try {
+        const draft = JSON.parse(localStorage.getItem(draftKey) || '{}');
+        form.elements.plate.value = draft.plate || '';
+        form.elements.notes.value = draft.notes || '';
+    } catch {
+        localStorage.removeItem(draftKey);
+    }
+    form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        localStorage.setItem(draftKey, JSON.stringify({
+            plate: form.elements.plate.value.trim().toUpperCase(),
+            notes: form.elements.notes.value.trim(),
+        }));
+        saved.textContent = 'Vehicle details saved on this device. Reconnect to finish the wash job.';
+    });
+</script>
+</body>
+</html>

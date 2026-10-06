@@ -1,0 +1,25 @@
+{
+    "id": "/worker",
+    "name": "Carbay+ Manager and Worker",
+    "short_name": "Carbay+",
+    "description": "Mobile wash job management and worker wallet.",
+    "start_url": "/app",
+    "scope": "/",
+    "display": "standalone",
+    "background_color": "#f4f8fc",
+    "theme_color": "#0096FF",
+    "icons": [
+        {
+            "src": "/carbay-favicon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/carbay-favicon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}

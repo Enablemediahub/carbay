@@ -50,6 +50,11 @@ class TenantSettings extends Page implements HasForms
             'cash_enabled' => $tenant->cash_enabled,
             'momo_enabled' => $tenant->momo_enabled,
             'paystack_enabled' => $tenant->paystack_enabled,
+            'paystack_transfers_enabled' => $tenant->paystack_transfers_enabled,
+            'loyalty_points_per_10' => $tenant->loyalty_points_per_10,
+            'loyalty_reward_points' => $tenant->loyalty_reward_points,
+            'loyalty_reward_value' => $tenant->loyalty_reward_value,
+            'fraud_discount_threshold_pct' => $tenant->fraud_discount_threshold_pct,
         ]);
     }
 
@@ -80,6 +85,24 @@ class TenantSettings extends Page implements HasForms
                     Toggle::make('momo_enabled'),
                     Toggle::make('paystack_enabled'),
                 ])->columns(3),
+                Section::make('Worker Paystack transfers')
+                    ->description('Allow approved worker payouts to be sent through Paystack. The manager must supply a Paystack transfer recipient code.')
+                    ->schema([Toggle::make('paystack_transfers_enabled')])
+                    ->visible(fn (): bool => $this->tenant()->hasFeature('paystack')),
+                Section::make('Loyalty rewards')
+                    ->description('Earn one point per GH₵10 spent by default. Set the required points and reward value for booking redemptions.')
+                    ->schema([
+                        TextInput::make('loyalty_points_per_10')->numeric()->minValue(0)->required(),
+                        TextInput::make('loyalty_reward_points')->numeric()->minValue(1)->required(),
+                        TextInput::make('loyalty_reward_value')->numeric()->prefix('GH₵')->minValue(0)->required(),
+                    ])
+                    ->columns(3)
+                    ->visible(fn (): bool => $this->tenant()->hasFeature('loyalty')),
+                Section::make('Fraud review')
+                    ->schema([
+                        TextInput::make('fraud_discount_threshold_pct')->numeric()->suffix('%')->minValue(0)->maxValue(100)->required(),
+                    ])
+                    ->visible(fn (): bool => $this->tenant()->hasFeature('fraud_flags')),
             ])
             ->statePath('data');
     }

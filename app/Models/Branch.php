@@ -54,6 +54,26 @@ class Branch extends Model implements BranchScoped
         return $this->hasMany(WashSale::class);
     }
 
+    public function jobs(): HasMany
+    {
+        return $this->hasMany(Job::class);
+    }
+
+    public function clients(): HasMany
+    {
+        return $this->hasMany(Client::class);
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function payouts(): HasMany
+    {
+        return $this->hasMany(Payout::class);
+    }
+
     public function addonInvoice(): HasOne
     {
         return $this->hasOne(BranchAddonInvoice::class);

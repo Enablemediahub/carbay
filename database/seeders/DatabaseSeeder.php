@@ -98,15 +98,15 @@ class DatabaseSeeder extends Seeder
             $package->features()->sync($featureAssignments);
         }
 
-        User::withoutGlobalScopes()->updateOrCreate(
+        User::withoutGlobalScopes()->firstOrCreate(
             ['email' => 'superadmin@carbayplus.test'],
             [
                 'tenant_id' => null,
                 'branch_id' => null,
                 'role' => 'super_admin',
                 'name' => 'Carbay+ Super Admin',
-                'phone' => null,
-                'password' => 'password',
+                'phone' => '0241786330',
+                'password' => '1234',
                 'pin' => null,
                 'status' => 'active',
             ],
