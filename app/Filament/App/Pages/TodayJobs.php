@@ -5,7 +5,6 @@ namespace App\Filament\App\Pages;
 use App\Models\Job;
 use App\Services\WalletService;
 use Filament\Pages\Page;
-use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 
 class TodayJobs extends Page
@@ -41,11 +40,11 @@ class TodayJobs extends Page
         $walletService->cancelJob($job);
     }
 
-    public function render(): View
+    protected function getViewData(): array
     {
-        return view(static::$view, [
+        return [
             'jobs' => $this->jobsQuery()->with(['services', 'client', 'workers'])->latest()->limit(100)->get(),
-        ]);
+        ];
     }
 
     private function jobsQuery(): Builder

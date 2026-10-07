@@ -8,6 +8,7 @@ export default defineConfig({
                 'resources/css/app.css',
                 'resources/css/filament/app/theme.css',
                 'resources/js/app.js',
+                'resources/js/plate-camera.js',
             ],
             refresh: true,
         }),

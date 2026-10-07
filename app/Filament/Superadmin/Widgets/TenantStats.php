@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\DB;
 
 class TenantStats extends StatsOverviewWidget
 {
+    protected static bool $isLazy = false;
+
     protected function getStats(): array
     {
         $activeTenants = Tenant::query()->where('status', 'active');

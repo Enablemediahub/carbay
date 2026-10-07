@@ -13,11 +13,19 @@ class ExampleTest extends TestCase
     /**
      * A basic test example.
      */
-    public function test_the_home_page_redirects_to_the_tenant_panel(): void
+    public function test_the_home_page_offers_worker_manager_and_company_portals(): void
     {
-        $response = $this->get('/');
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('Where would you like to go?')
+            ->assertSee('Worker')
+            ->assertSee('Manager')
+            ->assertSee('Admin / CEO')
+            ->assertSee('href="'.route('worker.login').'"', false)
+            ->assertSee('href="'.url('/app/login').'"', false);
 
-        $response->assertRedirect('/app');
+        $this->get('/app/login')->assertOk();
+        $this->get('/worker/login')->assertOk();
     }
 
     public function test_both_filament_panels_provide_login_pages(): void
@@ -25,11 +33,48 @@ class ExampleTest extends TestCase
         $this->get('/superadmin/login')
             ->assertOk()
             ->assertSee('Keep every wash moving.')
-            ->assertSee('Carbay+ platform sign in');
+            ->assertSee('Carbay+ platform sign in')
+            ->assertSee('rel="manifest"', false)
+            ->assertSee('carbay-install-prompt');
         $this->get('/app/login')
             ->assertOk()
             ->assertSee('Run your bay, beautifully.')
-            ->assertSee('Carbay+ bay sign in');
+            ->assertSee('Carbay+ bay sign in')
+            ->assertSee('rel="manifest"', false)
+            ->assertSee('carbay-install-prompt');
+    }
+
+    public function test_filament_assets_use_https_behind_the_local_preview_proxy(): void
+    {
+        $this->withServerVariables([
+            'REMOTE_ADDR' => '127.0.0.1',
+            'HTTP_HOST' => 'preview.example.test',
+            'HTTP_X_FORWARDED_PROTO' => 'https',
+            'HTTP_X_FORWARDED_PORT' => '443',
+        ])->get('/superadmin/login')
+            ->assertOk()
+            ->assertSee('https://localhost/build/assets/theme-', false);
+    }
+
+    public function test_super_admin_dashboard_has_mobile_platform_actions(): void
+    {
+        $superAdmin = User::withoutGlobalScopes()->create([
+            'role' => 'super_admin',
+            'status' => 'active',
+            'name' => 'Test Super Admin',
+            'email' => 'mobile-dashboard@example.test',
+            'password' => 'password',
+        ]);
+        $this->actingAs($superAdmin);
+
+        $this->get('/superadmin')
+            ->assertOk()
+            ->assertSee('Sales across all wash businesses today')
+            ->assertSee('GH₵ 0.00')
+            ->assertSee('Monthly recurring revenue')
+            ->assertSee('Active users')
+            ->assertSee('Manage tenants')
+            ->assertSee('Billing');
     }
 
     public function test_global_reference_resources_are_available_to_super_admin(): void

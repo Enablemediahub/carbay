@@ -14,7 +14,7 @@
         header { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 18px max(22px, calc((100vw - 1060px) / 2)); background: #fff; border-bottom: 1px solid #e5e9e1; }
         .brand-logo { display: block; width: auto; max-width: 110px; height: 64px; object-fit: contain; }
         .logout { padding: 10px 15px; color: #155642; border: 1px solid #d8e1d9; border-radius: 9px; background: #fff; font: inherit; font-weight: 700; cursor: pointer; }
-        main { width: min(100% - 36px, 1000px); margin: 42px auto; }
+        main { width: min(100% - 36px, 1000px); margin: 52px auto; }
         .welcome { margin-bottom: 23px; }
         .eyebrow { color: #76867d; font-size: 12px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
         h1 { margin: 8px 0; font-size: clamp(27px, 5vw, 38px); letter-spacing: -.045em; }
@@ -25,13 +25,26 @@
         .stat span { color: #75837c; font-size: 13px; }
         .stat strong { display: block; margin-top: 9px; font-size: 26px; }
         h2 { font-size: 20px; }
+        .worker-hero { position: relative; display: flex; min-height: 225px; align-items: center; overflow: hidden; padding: 25px; border-radius: 25px; color: #f7fbff; background: radial-gradient(circle at 92% 10%, #70caff66, transparent 145px), linear-gradient(140deg, #07518e, #06355f 72%, #052746); box-shadow: 0 16px 36px #05274626; isolation: isolate; }
+        .worker-hero-copy { position: relative; z-index: 1; max-width: 370px; }
+        .worker-hero .eyebrow { color: #c6e5fb; }
+        .worker-hero h1 { margin: 8px 0 5px; color: #fff; font-size: clamp(25px, 5vw, 34px); }
+        .worker-hero p { margin: 0; color: #d8ecfa; font-size: 14px; }
+        .worker-hero strong { display: block; margin-top: 6px; font-size: clamp(34px, 8vw, 44px); letter-spacing: -.05em; }
+        .worker-hero-art { position: absolute; top: 24px; right: -52px; display: grid; width: 205px; height: 205px; place-items: center; border: 1px solid #e0f2ff38; border-radius: 50%; color: #e0f2ffcc; opacity: .16; pointer-events: none; z-index: 0; }
+        .worker-hero-art::before, .worker-hero-art::after { position: absolute; border: 1px solid #e0f2ff26; border-radius: 50%; content: ""; }
+        .worker-hero-art::before { inset: 16px; }
+        .worker-hero-art::after { inset: 33px; }
+        .worker-hero-art svg { width: 56px; height: 56px; stroke-width: 1; }
+        .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .stat { min-height: 120px; border-radius: 19px; }
         .activity { overflow: hidden; }
         .sale { display: flex; justify-content: space-between; gap: 18px; padding: 16px 19px; border-top: 1px solid #edf0eb; }
         .sale:first-child { border-top: 0; }
         .sale strong { display: block; margin-bottom: 5px; }
         .amount { white-space: nowrap; font-weight: 800; }
         .empty { padding: 26px 20px; color: #718078; }
-        @media (max-width: 560px) { header { padding: 14px 18px; } main { margin-top: 30px; } .stats { gap: 10px; } .stat { padding: 17px; } .stat strong { font-size: 22px; } .sale { padding: 15px; } }
+        @media (max-width: 560px) { header { padding: 14px 18px; } main { margin-top: 42px; } .stats { gap: 10px; } .stat { padding: 17px; } .stat strong { font-size: 22px; } .sale { padding: 15px; } }
     </style>
 </head>
 <body>
@@ -44,15 +57,18 @@
 </header>
 <main>
     <div class="welcome">
-        <div class="eyebrow">{{ $tenant->name }} · {{ $branch->name }}</div>
-        <h1>Good work, {{ $worker->name }}.</h1>
-        <div class="muted">Here’s your completed wash activity.</div>
+        <section class="worker-hero" aria-label="Your sales today">
+            <div class="worker-hero-copy">
+                <div class="eyebrow">{{ $tenant->name }} · {{ $branch->name }}</div>
+                <h1>Good work, {{ $worker->name }}.</h1>
+                <p>Sales from your washes today</p>
+                <strong>GH₵ {{ number_format((float) $todayTotal, 2) }}</strong>
+            </div>
+            <div class="worker-hero-art" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m4-9.5a4 4 0 0 0-4-2.5c-2.2 0-4 1.3-4 3s1.8 3 4 3 4 1.3 4 3-1.8 3-4 3a4 4 0 0 1-4-2.5"/></svg>
+            </div>
+        </section>
     </div>
-
-    <section class="stats" aria-label="Today's activity">
-        <div class="stat"><span>Completed washes today</span><strong>{{ $todayCount }}</strong></div>
-        <div class="stat"><span>Sales attributed to you today</span><strong>GH₵ {{ number_format((float) $todayTotal, 2) }}</strong></div>
-    </section>
 
     <section class="stats" aria-label="Wallet earnings">
         <div class="stat"><span>Earned today</span><strong>GH₵ {{ number_format($todayEarnings, 2) }}</strong></div>

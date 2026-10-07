@@ -3,12 +3,12 @@
         <h1 class="text-2xl font-bold tracking-tight">Casual worker check-in</h1>
         <p class="mt-1 text-sm text-gray-500">Record attendance for today's casual team.</p>
     </div>
-    <form wire:submit="checkIn" class="flex gap-2 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-950/5">
+    <form wire:submit="checkIn" class="carbay-check-in-form flex gap-2 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-950/5">
         <select wire:model="workerId" class="min-w-0 flex-1 rounded-xl border-gray-300">
             <option value="">Choose casual worker</option>
             @foreach ($workers as $worker) <option value="{{ $worker->id }}">{{ $worker->name }}</option> @endforeach
         </select>
-        <button class="rounded-xl bg-primary-600 px-4 font-semibold text-white">Check in</button>
+        <button class="min-h-11 rounded-xl bg-primary-600 px-4 font-semibold text-white">Check in</button>
     </form>
     @error('workerId') <p class="text-sm text-danger-600">{{ $message }}</p> @enderror
     <section class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-950/5">

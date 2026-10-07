@@ -1,7 +1,8 @@
-const CACHE_NAME = 'carbay-shell-v3';
+const CACHE_NAME = 'carbay-shell-v5';
 const SHELL = [
     '/manifest.webmanifest',
     '/carbay-logo.png',
+    '/carbay-logo-dark.png',
     '/carbay-car.png',
     '/carbay-favicon-192.png',
     '/carbay-favicon-512.png',

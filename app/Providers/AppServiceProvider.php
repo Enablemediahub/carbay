@@ -62,7 +62,7 @@ class AppServiceProvider extends ServiceProvider
         Payout::observe(PayoutObserver::class);
 
         RateLimiter::for('worker-pin', function (Request $request): array {
-            $identity = strtolower((string) $request->input('company_email')).'|'
+            $identity = (string) $request->input('company_id').'|'
                 .preg_replace('/\D+/', '', (string) $request->input('phone'));
 
             return [

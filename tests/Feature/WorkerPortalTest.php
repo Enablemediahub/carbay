@@ -28,16 +28,19 @@ class WorkerPortalTest extends TestCase
 
         $this->get('/worker/login')
             ->assertOk()
-            ->assertSee('Team sign in');
+            ->assertSee('Team sign in')
+            ->assertSee('Choose your company')
+            ->assertSee('Worker Company')
+            ->assertDontSee('workers@example.test');
 
         $this->post('/worker/login', [
-            'company_email' => $tenant->email,
+            'company_id' => $tenant->id,
             'phone' => '0244000001',
             'pin' => '9999',
         ])->assertSessionHasErrors('credentials');
 
         $this->post('/worker/login', [
-            'company_email' => $tenant->email,
+            'company_id' => $tenant->id,
             'phone' => '0244000001',
             'pin' => '1234',
         ])->assertRedirect('/worker');
@@ -46,6 +49,8 @@ class WorkerPortalTest extends TestCase
         $this->get('/worker')
             ->assertOk()
             ->assertSee('Ama Worker')
+            ->assertSee('Sales from your washes today')
+            ->assertSee('GH₵ 20.00')
             ->assertSee('OWN-SALE')
             ->assertDontSee('OTHER-SALE');
 
@@ -61,7 +66,7 @@ class WorkerPortalTest extends TestCase
         $this->createWorker($tenant->id, $branchId, 'No PIN Worker', '0244000003');
 
         $this->post('/worker/login', [
-            'company_email' => $tenant->email,
+            'company_id' => $tenant->id,
             'phone' => '0244000003',
             'pin' => '1234',
         ])->assertSessionHasErrors('credentials');
@@ -76,7 +81,7 @@ class WorkerPortalTest extends TestCase
         $workerId = $this->createWorker($tenant->id, $branchId, 'Inactive Worker', '0244000004');
 
         $this->post('/worker/login', [
-            'company_email' => $tenant->email,
+            'company_id' => $tenant->id,
             'phone' => '0244000004',
             'pin' => '1234',
         ])->assertRedirect('/worker');
@@ -94,17 +99,44 @@ class WorkerPortalTest extends TestCase
 
         for ($attempt = 0; $attempt < 5; $attempt++) {
             $this->post('/worker/login', [
-                'company_email' => $tenant->email,
+                'company_id' => $tenant->id,
                 'phone' => '0244000099',
                 'pin' => '9999',
             ])->assertSessionHasErrors('credentials');
         }
 
         $this->post('/worker/login', [
-            'company_email' => $tenant->email,
+            'company_id' => $tenant->id,
             'phone' => '0244000099',
             'pin' => '9999',
         ])->assertTooManyRequests();
+    }
+
+    public function test_worker_can_choose_the_correct_company_when_phone_is_registered_with_multiple_companies(): void
+    {
+        [$tenant, $package] = $this->createTenantWithWorkerPinFeature();
+        $branchId = $this->createBranch($tenant->id, 'First Bay');
+        $this->createWorker($tenant->id, $branchId, 'Ama First Worker', '0244000008');
+
+        $otherTenant = $this->createTenant($package, 'Another Worker Company', 'another@example.test');
+        $otherBranchId = $this->createBranch($otherTenant->id, 'Second Bay');
+        $this->createWorker($otherTenant->id, $otherBranchId, 'Ama Second Worker', '0244000008');
+
+        $this->get('/worker/login')
+            ->assertOk()
+            ->assertSee('Worker Company')
+            ->assertSee('Another Worker Company');
+
+        $this->post('/worker/login', [
+            'company_id' => $otherTenant->id,
+            'phone' => '0244000008',
+            'pin' => '1234',
+        ])->assertRedirect('/worker');
+
+        $this->get('/worker')
+            ->assertOk()
+            ->assertSee('Ama Second Worker')
+            ->assertDontSee('Ama First Worker');
     }
 
     private function createTenantWithWorkerPinFeature(): array

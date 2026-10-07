@@ -7,7 +7,6 @@ use App\Services\PaystackService;
 use App\Services\WalletService;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
 
 class PayoutApprovalPage extends Page
@@ -65,14 +64,14 @@ class PayoutApprovalPage extends Page
         Notification::make()->title('Payout marked paid')->success()->send();
     }
 
-    public function render(): View
+    protected function getViewData(): array
     {
-        return view(static::$view, [
+        return [
             'payouts' => Payout::query()->with('worker')
                 ->whereIn('status', ['queued', 'pending'])
                 ->orderByRaw("CASE WHEN status = 'pending' THEN 0 ELSE 1 END")
                 ->orderBy('available_at')
                 ->get(),
-        ]);
+        ];
     }
 }

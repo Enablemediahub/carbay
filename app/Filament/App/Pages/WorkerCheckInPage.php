@@ -6,7 +6,6 @@ use App\Models\Worker;
 use App\Models\WorkerCheckIn;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
 
 class WorkerCheckInPage extends Page
@@ -62,12 +61,12 @@ class WorkerCheckInPage extends Page
         Notification::make()->title('Worker checked out')->success()->send();
     }
 
-    public function render(): View
+    protected function getViewData(): array
     {
-        return view(static::$view, [
+        return [
             'workers' => $this->casualWorkers()->with(['branch'])->orderBy('name')->get(),
             'checkIns' => WorkerCheckIn::query()->with('worker')->whereDate('work_date', today())->latest('checked_in_at')->get(),
-        ]);
+        ];
     }
 
     private function casualWorkers()

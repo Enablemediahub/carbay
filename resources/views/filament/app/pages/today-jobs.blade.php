@@ -22,8 +22,8 @@
                     </div>
                     @if ($job->status === 'open')
                         <div class="flex gap-2">
-                            <button wire:click="complete({{ $job->id }})" class="rounded-lg bg-primary-600 px-3 py-2 text-sm font-semibold text-white">Complete</button>
-                            <button wire:click="cancel({{ $job->id }})" wire:confirm="Cancel this wash job?" class="rounded-lg border px-3 py-2 text-sm font-semibold">Cancel</button>
+                            <button wire:click="complete({{ $job->id }})" class="min-h-11 rounded-lg bg-primary-600 px-3 py-2 text-sm font-semibold text-white">Complete</button>
+                            <button wire:click="cancel({{ $job->id }})" wire:confirm="Cancel this wash job?" class="min-h-11 rounded-lg border px-3 py-2 text-sm font-semibold">Cancel</button>
                         </div>
                     @endif
                 </div>

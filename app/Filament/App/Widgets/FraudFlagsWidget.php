@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 class FraudFlagsWidget extends BaseWidget
 {
+    protected static bool $isLazy = false;
+
     protected static ?string $heading = 'Fraud and reconciliation alerts';
 
     protected int|string|array $columnSpan = 'full';

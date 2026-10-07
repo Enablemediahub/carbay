@@ -287,7 +287,12 @@ class TenantIsolationTest extends TestCase
 
         $this->actingAs(User::withoutGlobalScope(TenantScope::class)->findOrFail($userId));
 
-        $this->get('/app')->assertOk();
+        $this->get('/app')
+            ->assertOk()
+            ->assertSee('aria-label="Primary navigation"', false)
+            ->assertSee('New wash job')
+            ->assertSee('Tenant A')
+            ->assertSee('More');
         $this->get('/app/branches')->assertOk();
         $this->get('/app/workers')->assertOk();
         $this->get('/app/service-prices')->assertOk();

@@ -20,7 +20,6 @@ use App\Services\PlateOcrService;
 use App\Services\WalletService;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -112,6 +111,12 @@ class NewWashJob extends Page
         $this->clientId = null;
     }
 
+    public function updatedPlate(): void
+    {
+        $this->plateConfidence = 0;
+        $this->plateConfirmed = false;
+    }
+
     public function updatedSelectedWorkers(): void
     {
         $this->synchronizeWorkerShares();
@@ -125,6 +130,23 @@ class NewWashJob extends Page
     public function updatedPaymentMethod(): void
     {
         $this->paymentReference = '';
+    }
+
+    public function acceptLocalPlateScan(string $plate, float $confidence): void
+    {
+        $plate = strtoupper(trim($plate));
+        validator(
+            ['plate' => $plate, 'confidence' => $confidence],
+            [
+                'plate' => ['required', 'string', 'max:20', 'regex:/^(?:[A-Z]{2}\s?\d{3,4}\s?[A-Z]?|[A-Z]{2}\s?\d{4}-\d{2}|[A-Z]{2}\s?\d{4}\s?[A-Z])$/'],
+                'confidence' => ['required', 'numeric', 'between:0,1'],
+            ],
+        )->validate();
+
+        $this->plate = $plate;
+        $this->plateScanId = null;
+        $this->plateConfidence = $confidence;
+        $this->plateConfirmed = $confidence >= 0.7;
     }
 
     public function addCustomCategory(): void
@@ -180,31 +202,6 @@ class NewWashJob extends Page
         $this->createClient = false;
     }
 
-    public function scanPlate(PlateOcrService $ocr): void
-    {
-        $this->validate(['photo' => ['required', 'image', 'max:10240']]);
-        $user = auth()->user();
-        $tenant = Tenant::withoutGlobalScopes()->findOrFail($user->tenant_id);
-        $result = $ocr->scan($this->photo, $tenant, (int) $user->branch_id, (int) $user->id);
-
-        if ($result['raw'] === '') {
-            $this->plateScanId = $result['scan_id'];
-            $this->plateConfidence = $result['confidence'];
-            $this->plateConfirmed = false;
-            Notification::make()->title('No plate was recognized')->body('Enter the registration manually.')->warning()->send();
-
-            return;
-        }
-
-        $this->plate = strtoupper(trim($result['raw']));
-        $this->plateScanId = $result['scan_id'];
-        $this->plateConfidence = $result['confidence'];
-        $this->plateConfirmed = $result['confidence'] >= 0.7;
-        Notification::make()->title('Plate scanned')
-            ->body('Confidence: '.number_format($result['confidence'] * 100, 1).'%'.($this->plateConfirmed ? ' — verify the plate before saving.' : ' — confirmation is required before saving.'))
-            ->success()->send();
-    }
-
     public function submit(WalletService $walletService, PaystackService $paystack): mixed
     {
         $this->plate = strtoupper(trim($this->plate));
@@ -219,7 +216,7 @@ class NewWashJob extends Page
             'clientEmail' => ['nullable', 'email', 'max:255'],
             'selectedServices' => ['required', 'array', 'min:1'],
             'selectedServices.*' => ['integer'],
-            'selectedWorkers' => ['array'],
+            'selectedWorkers' => ['required', 'array', 'min:1'],
             'selectedWorkers.*' => ['integer'],
             'workerShares' => ['array'],
             'paymentMethod' => ['required', 'in:cash,momo,paystack'],
@@ -227,7 +224,7 @@ class NewWashJob extends Page
             'photo' => ['nullable', 'image', 'max:10240'],
             'notes' => ['nullable', 'string', 'max:2000'],
         ]);
-        if ($this->plateScanId && $this->plateConfidence < 0.7 && ! $this->plateConfirmed) {
+        if ($this->plateConfidence > 0 && $this->plateConfidence < 0.7 && ! $this->plateConfirmed) {
             throw ValidationException::withMessages(['plate' => 'Confirm or correct this low-confidence plate scan before saving.']);
         }
 
@@ -255,15 +252,16 @@ class NewWashJob extends Page
         }
         $total = array_sum(array_column($items, 'total_amount'));
         $workerShare = array_sum(array_column($items, 'worker_share'));
+        if ($workerShare <= 0) {
+            throw ValidationException::withMessages([
+                'selectedServices' => 'Selected services must allocate a positive share to workers before this job can be saved.',
+            ]);
+        }
         $workers = $this->availableWorkers()->whereIn('id', $this->selectedWorkers)->get();
         if ($workers->count() !== count(array_unique(array_map('intval', $this->selectedWorkers)))) {
             throw ValidationException::withMessages(['selectedWorkers' => 'Choose only active workers assigned to this branch.']);
         }
         $shares = $this->validatedShares($workers->pluck('id')->all(), $workerShare);
-        if ($workerShare > 0 && $workers->isEmpty()) {
-            throw ValidationException::withMessages(['selectedWorkers' => 'Assign at least one worker to receive the configured worker share.']);
-        }
-
         $clientId = $this->clientId;
         if (! $this->createClient && $clientId && ! Client::query()->whereKey($clientId)->exists()) {
             throw ValidationException::withMessages(['clientId' => 'Choose a client belonging to this company.']);
@@ -371,9 +369,9 @@ class NewWashJob extends Page
         return null;
     }
 
-    public function render(): View
+    protected function getViewData(): array
     {
-        return view(static::$view, [
+        return [
             'categories' => $this->availableCategories()->orderBy('name')->get(),
             'makes' => $this->availableMakes()->orderBy('name')->get(),
             'models' => $this->availableModels()->orderBy('name')->get(),
@@ -382,7 +380,7 @@ class NewWashJob extends Page
             'clients' => $this->matchingClients(),
             'breakdown' => $this->breakdown(),
             'tenant' => Tenant::withoutGlobalScopes()->find(auth()->user()->tenant_id),
-        ]);
+        ];
     }
 
     private function availableCategories()
@@ -521,8 +519,8 @@ class NewWashJob extends Page
         $shares = [];
         foreach ($workerIds as $id) {
             $share = filter_var($this->workerShares[$id] ?? 0, FILTER_VALIDATE_FLOAT);
-            if ($share === false || $share < 0 || round($share, 2) !== (float) $share) {
-                throw ValidationException::withMessages(['workerShares' => 'Worker shares must be non-negative amounts with up to two decimal places.']);
+            if ($share === false || $share <= 0 || round($share, 2) !== (float) $share) {
+                throw ValidationException::withMessages(['workerShares' => 'Each assigned worker must receive a positive share with up to two decimal places.']);
             }
             $shares[$id] = round((float) $share, 2);
         }

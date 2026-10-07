@@ -6,7 +6,6 @@ use App\Models\CashReconciliation;
 use App\Models\Payment;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Illuminate\Contracts\View\View;
 
 class CashReconciliationPage extends Page
 {
@@ -73,9 +72,9 @@ class CashReconciliationPage extends Page
             ->sum('amount');
     }
 
-    public function render(): View
+    protected function getViewData(): array
     {
-        return view(static::$view, ['expected' => $this->expectedAmount()]);
+        return ['expected' => $this->expectedAmount()];
     }
 
     private function loadSaved(): void

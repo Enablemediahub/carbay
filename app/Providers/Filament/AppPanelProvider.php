@@ -20,6 +20,7 @@ use App\Filament\App\Widgets\TopWorkers;
 use App\Filament\Auth\Login;
 use App\Http\Middleware\EnsureTenantSubscriptionActive;
 use App\Http\Middleware\RedirectSuperAdminFromTenantPanel;
+use App\Support\DashboardSales;
 use Filament\Enums\ThemeMode;
 use Filament\Facades\Filament;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -50,9 +51,22 @@ class AppPanelProvider extends PanelProvider
             ->login(Login::class)
             ->brandName('Carbay+')
             ->brandLogo(fn (): View => view('filament.brand'))
+            ->darkModeBrandLogo(fn (): View => view('filament.brand-dark'))
             ->brandLogoHeight('4rem')
+            ->renderHook(PanelsRenderHook::TOPBAR_START, fn (): View => view('filament.mobile-header'))
             ->renderHook(PanelsRenderHook::HEAD_START, fn (): View => view('filament.pwa-head'))
             ->renderHook(PanelsRenderHook::BODY_END, fn (): View => view('filament.pwa-register'))
+            ->renderHook(PanelsRenderHook::BODY_END, fn (): View => view('filament.mobile-navigation'))
+            ->renderHook(
+                PanelsRenderHook::PAGE_START,
+                fn (): View => view('filament.app.mobile-dashboard', [
+                    'todaySales' => app(DashboardSales::class)->tenantToday(
+                        (int) auth()->user()->tenant_id,
+                        auth()->user()->role === 'manager' ? (int) auth()->user()->branch_id : null,
+                    ),
+                ]),
+                scopes: Dashboard::class,
+            )
             ->defaultThemeMode(ThemeMode::Light)
             ->colors(['primary' => Color::hex('#0096FF')])
             ->viteTheme('resources/css/filament/app/theme.css')

@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 class BranchSales extends TableWidget
 {
+    protected static bool $isLazy = false;
+
     protected static ?string $heading = 'Sales by branch this month';
 
     public function table(Table $table): Table

@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 class TopServices extends TableWidget
 {
+    protected static bool $isLazy = false;
+
     protected static ?string $heading = 'Top services this month';
 
     public function table(Table $table): Table

@@ -18,7 +18,9 @@
         .intro { margin: 0 0 28px; color: #68766f; line-height: 1.6; }
         label { display: block; margin: 18px 0 7px; font-size: 13px; font-weight: 700; }
         input { display: block; width: 100%; height: 48px; padding: 0 13px; border: 1px solid #d7ded8; border-radius: 10px; font: inherit; color: inherit; }
+        select { display: block; width: 100%; height: 48px; padding: 0 13px; border: 1px solid #d7ded8; border-radius: 10px; background: #fff; font: inherit; color: inherit; }
         input:focus { outline: 3px solid #e7bf5940; border-color: #bb8823; }
+        select:focus { outline: 3px solid #e7bf5940; border-color: #bb8823; }
         button { width: 100%; height: 50px; margin-top: 25px; border: 0; border-radius: 11px; color: #fff; background: #155642; font: inherit; font-weight: 750; cursor: pointer; }
         button:hover { background: #104535; }
         .error { margin-top: 15px; padding: 12px 14px; border-radius: 10px; color: #932e28; background: #fff0ed; font-size: 14px; }
@@ -29,7 +31,7 @@
 <main>
     <div class="brand"><img class="brand-logo" src="{{ asset('carbay-logo.png') }}" alt="Carbay+"></div>
     <h1>Team sign in</h1>
-    <p class="intro">Use your company email, registered phone number and worker PIN to view your wash activity.</p>
+    <p class="intro">Choose your company, then enter your registered phone number and worker PIN to view your wash activity.</p>
 
     @if ($errors->any())
         <div class="error" role="alert">{{ $errors->first() }}</div>
@@ -37,8 +39,16 @@
 
     <form method="post" action="{{ route('worker.login.submit') }}">
         @csrf
-        <label for="company_email">Company email</label>
-        <input id="company_email" name="company_email" type="email" value="{{ old('company_email') }}" autocomplete="organization" required>
+        <label for="company_id">Company</label>
+        <select id="company_id" name="company_id" autocomplete="organization" required>
+            <option value="">Choose your company</option>
+            @foreach ($companies as $company)
+                <option value="{{ $company->id }}" @selected((string) old('company_id') === (string) $company->id)>{{ $company->name }}</option>
+            @endforeach
+        </select>
+        @if ($companies->isEmpty())
+            <p class="privacy">Worker PIN sign-in is not currently available for any active company. Ask your company manager for assistance.</p>
+        @endif
 
         <label for="phone">Your registered phone number</label>
         <input id="phone" name="phone" type="tel" value="{{ old('phone') }}" autocomplete="tel" required>

@@ -6,11 +6,24 @@ use App\Filament\App\Widgets\BranchSales;
 use App\Filament\App\Widgets\SalesOverview;
 use App\Filament\App\Widgets\TopServices;
 use App\Filament\App\Widgets\TopWorkers;
+use Filament\Actions\Action;
 use Filament\Pages\Dashboard as BaseDashboard;
 
 class Dashboard extends BaseDashboard
 {
     protected static ?string $title = 'Business overview';
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('newWashJob')
+                ->label('New job')
+                ->icon('heroicon-o-plus-circle')
+                ->color('primary')
+                ->url(NewWashJob::getUrl(panel: 'app'))
+                ->visible(fn (): bool => in_array(auth()->user()?->role, ['manager', 'ceo'], true)),
+        ];
+    }
 
     public function getWidgets(): array
     {

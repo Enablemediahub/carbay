@@ -11,7 +11,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn () => redirect('/app'));
+Route::view('/', 'landing')->name('home');
 
 Route::post('/payments/paystack/webhook', PaystackWebhookController::class)->name('payments.paystack.webhook');
 Route::post('/manager/plate-scan', PlateOcrController::class)

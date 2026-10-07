@@ -4,6 +4,7 @@ namespace App\Providers\Filament;
 
 use App\Filament\Auth\Login;
 use App\Filament\Superadmin\Widgets\TenantStats;
+use App\Support\DashboardSales;
 use Filament\Enums\ThemeMode;
 use Filament\Facades\Filament;
 use Filament\Http\Middleware\Authenticate;
@@ -35,7 +36,19 @@ class SuperadminPanelProvider extends PanelProvider
             ->login(Login::class)
             ->brandName('Carbay+ Super Admin')
             ->brandLogo(fn (): View => view('filament.brand'))
+            ->darkModeBrandLogo(fn (): View => view('filament.brand-dark'))
             ->brandLogoHeight('4rem')
+            ->renderHook(PanelsRenderHook::TOPBAR_START, fn (): View => view('filament.mobile-header'))
+            ->renderHook(PanelsRenderHook::HEAD_START, fn (): View => view('filament.pwa-head'))
+            ->renderHook(PanelsRenderHook::BODY_END, fn (): View => view('filament.pwa-register'))
+            ->renderHook(PanelsRenderHook::BODY_END, fn (): View => view('filament.mobile-navigation'))
+            ->renderHook(
+                PanelsRenderHook::PAGE_START,
+                fn (): View => view('filament.superadmin.mobile-dashboard', [
+                    'todaySales' => app(DashboardSales::class)->platformToday(),
+                ]),
+                scopes: Dashboard::class,
+            )
             ->defaultThemeMode(ThemeMode::Light)
             ->colors(['primary' => Color::hex('#0096FF')])
             ->viteTheme('resources/css/filament/app/theme.css')

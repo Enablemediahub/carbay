@@ -14,6 +14,215 @@
         color: rgb(var(--carbay-ink));
     }
 
+    .dark .fi-main .fi-page .bg-white {
+        background-color: #172331;
+    }
+
+    .dark .fi-main .fi-page .bg-gray-50 {
+        background-color: #1c2b39;
+    }
+
+    .dark .fi-main .fi-page .bg-gray-100 {
+        background-color: #26384a;
+    }
+
+    .dark .fi-main .fi-page .text-gray-950,
+    .dark .fi-main .fi-page .text-gray-900,
+    .dark .fi-main .fi-page .text-gray-800 {
+        color: #f4f8fc;
+    }
+
+    .dark .fi-main .fi-page .text-gray-600,
+    .dark .fi-main .fi-page .text-gray-500,
+    .dark .fi-main .fi-page .text-gray-400 {
+        color: #b3c2d0;
+    }
+
+    .dark .fi-main .fi-page [class~="ring-gray-950/5"] {
+        --tw-ring-color: rgb(255 255 255 / 10%);
+    }
+
+    .dark .fi-main .fi-page input:not([type="checkbox"]):not([type="radio"]),
+    .dark .fi-main .fi-page select,
+    .dark .fi-main .fi-page textarea {
+        border-color: #405367;
+        background-color: #111c28;
+        color: #f4f8fc;
+    }
+
+    .carbay-new-wash-job {
+        color: #142637;
+    }
+
+    .carbay-new-wash-job input:not([type="checkbox"]):not([type="radio"]),
+    .carbay-new-wash-job select,
+    .carbay-new-wash-job textarea {
+        min-height: 2.75rem;
+        border-color: #d3e2ee;
+        background-color: #fbfdff;
+        color: #142637;
+    }
+
+    .carbay-new-wash-job input::placeholder,
+    .carbay-new-wash-job textarea::placeholder {
+        color: #74889a;
+        opacity: 1;
+    }
+
+    .carbay-new-wash-job section {
+        min-width: 0;
+        border-radius: 1.15rem;
+        border-color: #e1ebf2;
+        color: #142637;
+    }
+
+    .carbay-new-wash-job section > *,
+    .carbay-new-wash-job section > * > * {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .carbay-new-wash-job section input:not([type="checkbox"]):not([type="radio"]),
+    .carbay-new-wash-job section select,
+    .carbay-new-wash-job section textarea {
+        box-sizing: border-box;
+        max-width: 100%;
+    }
+
+    .carbay-new-wash-job .carbay-mobile-sticky-action {
+        border-color: #dce8f1;
+        background-color: rgb(255 255 255 / 96%);
+    }
+
+    .dark .carbay-new-wash-job {
+        color: #f4f8fc;
+    }
+
+    .dark .carbay-new-wash-job section.bg-white {
+        border-color: #2d4052;
+        background-color: #172331;
+        color: #f4f8fc;
+        --tw-ring-color: rgb(255 255 255 / 10%);
+    }
+
+    .dark .carbay-new-wash-job input:not([type="checkbox"]):not([type="radio"]),
+    .dark .carbay-new-wash-job select,
+    .dark .carbay-new-wash-job textarea {
+        border-color: #405367;
+        background-color: #111c28;
+        color: #f4f8fc;
+        color-scheme: dark;
+    }
+
+    .dark .carbay-new-wash-job input::placeholder,
+    .dark .carbay-new-wash-job textarea::placeholder {
+        color: #91a4b6;
+    }
+
+    .dark .carbay-new-wash-job label,
+    .dark .carbay-new-wash-job h1,
+    .dark .carbay-new-wash-job h2,
+    .dark .carbay-new-wash-job .text-gray-900,
+    .dark .carbay-new-wash-job .text-gray-800 {
+        color: #f4f8fc;
+    }
+
+    .dark .carbay-new-wash-job label.text-primary-700 {
+        color: #8ed0ff;
+    }
+
+    .dark .carbay-new-wash-job .text-gray-600,
+    .dark .carbay-new-wash-job .text-gray-500,
+    .dark .carbay-new-wash-job .text-gray-400 {
+        color: #b3c2d0;
+    }
+
+    .dark .carbay-new-wash-job .border-gray-300,
+    .dark .carbay-new-wash-job .border {
+        border-color: #405367;
+    }
+
+    .dark .carbay-new-wash-job .bg-gray-50 {
+        background-color: #1c2b39;
+    }
+
+    .dark .carbay-new-wash-job .bg-gray-950 {
+        background-color: #0b1722;
+    }
+
+    .dark .carbay-new-wash-job .text-gray-300 {
+        color: #c4d2de;
+    }
+
+    .dark .carbay-new-wash-job label:has(input[type="radio"]:checked) {
+        border-color: #38a8ff;
+        background-color: #153a58;
+        color: #d8efff;
+    }
+
+    .dark .carbay-new-wash-job .carbay-mobile-sticky-action {
+        border-color: #2d4052;
+        background-color: rgb(17 28 40 / 96%);
+    }
+
+    .carbay-plate-camera-modal:not([hidden]) {
+        position: fixed;
+        z-index: 100;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        overflow-y: auto;
+        padding: max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom));
+        background: rgb(4 12 20 / 82%);
+    }
+
+    .carbay-plate-camera-modal[hidden] {
+        display: none !important;
+    }
+
+    .carbay-plate-camera-panel {
+        width: min(100%, 42rem);
+        border: 1px solid #dce8f1;
+        border-radius: 1.25rem;
+        background: #fff;
+        padding: 1rem;
+        color: #142637;
+        box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 35%);
+    }
+
+    .dark .carbay-plate-camera-panel {
+        border-color: #2d4052;
+        background: #172331;
+        color: #f4f8fc;
+    }
+
+    .carbay-plate-camera-view {
+        position: relative;
+        display: grid;
+        min-height: 13rem;
+        margin-top: 1rem;
+        overflow: hidden;
+        place-items: center;
+        border-radius: 1rem;
+        background: #07111b;
+    }
+
+    .carbay-plate-camera-view video {
+        width: 100%;
+        max-height: min(60vh, 32rem);
+        object-fit: cover;
+    }
+
+    .carbay-plate-camera-guide {
+        position: absolute;
+        width: 90%;
+        height: 36%;
+        border: 2px solid #38bdf8;
+        border-radius: 0.75rem;
+        box-shadow: 0 0 0 999px rgb(0 0 0 / 24%);
+        pointer-events: none;
+    }
+
     body:has(.fi-simple-page) {
         background:
             radial-gradient(ellipse at 5% 5%, rgba(0, 150, 255, 0.12), transparent 34rem),
@@ -34,6 +243,203 @@
         max-width: 8rem;
         height: 4rem;
         object-fit: contain;
+    }
+
+    .carbay-mobile-header {
+        display: none;
+    }
+
+    .carbay-dashboard-hero {
+        display: none;
+    }
+
+    .fi-dashboard-page .fi-wi-stats-overview-stat {
+        min-width: 0;
+        border: 1px solid #e1ebf2;
+        border-radius: 1.15rem;
+        background: #fff;
+        box-shadow: 0 0.35rem 1.1rem rgba(19, 59, 91, 0.06);
+    }
+
+    .fi-dashboard-page .fi-wi-stats-overview-stat-label {
+        color: #5b7081;
+        font-weight: 600;
+    }
+
+    .dark .fi-dashboard-page .fi-wi-stats-overview-stat {
+        border-color: #2d4052;
+        background: #172331;
+        box-shadow: 0 0.35rem 1.1rem rgba(0, 0, 0, 0.12);
+    }
+
+    .dark .fi-dashboard-page .fi-wi-stats-overview-stat-label {
+        color: #b3c2d0;
+    }
+
+    .carbay-dashboard-hero {
+        position: relative;
+        display: flex;
+        min-height: 16rem;
+        align-items: center;
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+        padding: 2rem 2.25rem;
+        border-radius: 1.5rem;
+        background:
+            radial-gradient(circle at 88% 14%, rgba(112, 202, 255, 0.27), transparent 11rem),
+            linear-gradient(140deg, #07518e, #06355f 72%, #052746);
+        box-shadow: 0 1rem 2rem rgba(5, 39, 70, 0.16);
+        color: #f7fbff;
+        isolation: isolate;
+    }
+
+    .fi-dashboard-page {
+        padding-top: 1rem;
+    }
+
+    .carbay-dashboard-hero::before {
+        position: absolute;
+        z-index: 0;
+        inset: 0;
+        background: linear-gradient(105deg, rgba(3, 29, 51, 0.24), rgba(3, 29, 51, 0.06) 72%);
+        content: "";
+        pointer-events: none;
+    }
+
+    .carbay-dashboard-hero .carbay-dashboard-hero-copy {
+        position: relative;
+        z-index: 1;
+        width: min(100%, 34rem);
+    }
+
+    .carbay-dashboard-hero .carbay-dashboard-eyebrow {
+        display: block;
+        color: #c6e5fb;
+        font-size: 0.75rem;
+        font-weight: 650;
+        letter-spacing: 0.04em;
+    }
+
+    .carbay-dashboard-hero h2 {
+        margin-top: 0.55rem;
+        color: #fff;
+        font-size: clamp(1.8rem, 3vw, 2.5rem);
+        font-weight: 760;
+        letter-spacing: -0.045em;
+        line-height: 1.15;
+    }
+
+    .carbay-dashboard-hero p {
+        margin-top: 0.55rem;
+        color: #d8ecfa;
+        font-size: 0.95rem;
+    }
+
+    .carbay-dashboard-hero .carbay-dashboard-sales {
+        display: block;
+        margin-top: 0.25rem;
+        color: #fff;
+        font-size: clamp(2rem, 4vw, 2.75rem);
+        font-weight: 800;
+        letter-spacing: -0.055em;
+        line-height: 1.15;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .carbay-dashboard-hero .carbay-dashboard-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.65rem;
+        margin-top: 1.1rem;
+    }
+
+    .carbay-dashboard-hero .carbay-dashboard-primary-action,
+    .carbay-dashboard-hero .carbay-dashboard-secondary-action {
+        display: inline-flex;
+        min-height: 2.75rem;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        padding: 0.6rem 0.9rem;
+        border-radius: 0.8rem;
+        font-size: 0.82rem;
+        font-weight: 750;
+        text-decoration: none;
+    }
+
+    .carbay-dashboard-hero .carbay-dashboard-primary-action {
+        background: #fff;
+        color: #07518e;
+    }
+
+    .carbay-dashboard-hero .carbay-dashboard-secondary-action {
+        border: 1px solid rgba(232, 245, 255, 0.38);
+        background: rgba(255, 255, 255, 0.09);
+        color: #fff;
+    }
+
+    .carbay-dashboard-hero .carbay-dashboard-primary-action svg,
+    .carbay-dashboard-hero .carbay-dashboard-secondary-action svg {
+        width: 1.15rem;
+        height: 1.15rem;
+    }
+
+    .carbay-dashboard-hero .carbay-dashboard-orbit {
+        position: absolute;
+        top: 50%;
+        right: 2rem;
+        display: grid;
+        width: 16rem;
+        height: 16rem;
+        place-items: center;
+        transform: translateY(-50%);
+        border: 1px solid rgba(224, 242, 255, 0.22);
+        border-radius: 50%;
+        color: rgba(224, 242, 255, 0.22);
+        pointer-events: none;
+        z-index: 0;
+        opacity: 0.16;
+    }
+
+    .carbay-dashboard-hero .carbay-dashboard-orbit::before,
+    .carbay-dashboard-hero .carbay-dashboard-orbit::after,
+    .carbay-dashboard-hero .carbay-dashboard-orbit span {
+        position: absolute;
+        border: 1px solid rgba(224, 242, 255, 0.14);
+        border-radius: 50%;
+        content: "";
+    }
+
+    .carbay-dashboard-hero .carbay-dashboard-orbit::before {
+        inset: 1rem;
+    }
+
+    .carbay-dashboard-hero .carbay-dashboard-orbit::after {
+        inset: 2rem;
+    }
+
+    .carbay-dashboard-hero .carbay-dashboard-orbit span {
+        top: 1.2rem;
+        left: 2.1rem;
+        width: 0.6rem;
+        height: 0.6rem;
+        border: 0;
+        background: #70caff;
+    }
+
+    .carbay-dashboard-hero .carbay-dashboard-orbit svg {
+        width: 4.5rem;
+        height: 4.5rem;
+        stroke-width: 1;
+    }
+
+    .carbay-mobile-dock,
+    .carbay-mobile-more-panel {
+        display: none;
+    }
+
+    .carbay-install-prompt {
+        display: none;
     }
 
     .fi-simple-layout {
@@ -197,7 +603,7 @@
         width: min(100%, 22rem);
         max-height: 14rem;
         object-fit: contain;
-        filter: drop-shadow(0 1.25rem 1rem rgba(3, 20, 16, 0.22));
+        filter: brightness(0) invert(1) drop-shadow(0 1.25rem 1rem rgba(3, 20, 16, 0.22));
         animation: carbay-float 5s ease-in-out infinite;
     }
 
@@ -404,7 +810,626 @@
         .fi-simple-page > section > form#form {
             padding: 1.5rem 1.7rem 0;
         }
+    }
 
+    @media (max-width: 767px) {
+        .fi-dashboard-page {
+            padding-top: 0.85rem;
+        }
+
+        .carbay-dashboard-hero {
+            position: relative;
+            display: flex;
+            min-height: 14rem;
+            align-items: center;
+            overflow: hidden;
+            padding: 1.35rem;
+            border-radius: 1.5rem;
+            background:
+                radial-gradient(circle at 90% 12%, rgba(112, 202, 255, 0.27), transparent 8rem),
+                linear-gradient(140deg, #07518e, #06355f 72%, #052746);
+            box-shadow: 0 1rem 2rem rgba(5, 39, 70, 0.16);
+            color: #f7fbff;
+            isolation: isolate;
+        }
+
+        .carbay-dashboard-hero .carbay-dashboard-orbit {
+            right: -5rem;
+            opacity: 0.08;
+        }
+
+        .carbay-dashboard-hero-copy {
+            position: relative;
+            z-index: 1;
+            width: min(100%, 20rem);
+        }
+
+        .carbay-dashboard-eyebrow {
+            display: block;
+            color: #c6e5fb;
+            font-size: 0.7rem;
+            font-weight: 650;
+            letter-spacing: 0.035em;
+        }
+
+        .carbay-dashboard-hero h2 {
+            margin-top: 0.45rem;
+            color: #fff;
+            font-size: 1.6rem;
+            font-weight: 760;
+            letter-spacing: -0.045em;
+            line-height: 1.15;
+        }
+
+        .carbay-dashboard-hero p {
+            max-width: 17rem;
+            margin-top: 0.45rem;
+            color: #d8ecfa;
+            font-size: 0.82rem;
+            line-height: 1.4;
+        }
+
+        .carbay-dashboard-sales {
+            display: block;
+            margin-top: 0.2rem;
+            color: #fff;
+            font-size: clamp(1.8rem, 7vw, 2.25rem);
+            font-weight: 800;
+            letter-spacing: -0.055em;
+            line-height: 1.15;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .carbay-dashboard-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.55rem;
+            margin-top: 1rem;
+        }
+
+        .carbay-dashboard-primary-action,
+        .carbay-dashboard-secondary-action {
+            display: inline-flex;
+            min-height: 2.75rem;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            padding: 0.55rem 0.75rem;
+            border-radius: 0.8rem;
+            font-size: 0.74rem;
+            font-weight: 750;
+            text-decoration: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .carbay-dashboard-primary-action {
+            background: #fff;
+            color: #07518e;
+        }
+
+        .carbay-dashboard-secondary-action {
+            border: 1px solid rgba(232, 245, 255, 0.38);
+            background: rgba(255, 255, 255, 0.09);
+            color: #fff;
+        }
+
+        .carbay-dashboard-primary-action svg,
+        .carbay-dashboard-secondary-action svg {
+            width: 1.1rem;
+            height: 1.1rem;
+        }
+
+        .carbay-dashboard-orbit {
+            position: absolute;
+            top: 1.2rem;
+            right: -4rem;
+            display: grid;
+            width: 13rem;
+            height: 13rem;
+            place-items: center;
+            border: 1px solid rgba(224, 242, 255, 0.22);
+            border-radius: 50%;
+            color: rgba(224, 242, 255, 0.82);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .carbay-dashboard-orbit::before,
+        .carbay-dashboard-orbit::after,
+        .carbay-dashboard-orbit span {
+            position: absolute;
+            border: 1px solid rgba(224, 242, 255, 0.14);
+            border-radius: 50%;
+            content: "";
+        }
+
+        .carbay-dashboard-orbit::before {
+            inset: 1rem;
+        }
+
+        .carbay-dashboard-orbit::after {
+            inset: 2rem;
+        }
+
+        .carbay-dashboard-orbit span {
+            top: 1.2rem;
+            left: 2.1rem;
+            width: 0.6rem;
+            height: 0.6rem;
+            border: 0;
+            background: #70caff;
+        }
+
+        .carbay-dashboard-orbit svg {
+            width: 3.5rem;
+            height: 3.5rem;
+            stroke-width: 1;
+        }
+
+        .fi-dashboard-page .fi-header {
+            display: none;
+        }
+
+        .fi-dashboard-page .fi-account-widget {
+            display: none;
+        }
+
+        .fi-dashboard-page .fi-wi-stats-overview-stats-ctn {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.7rem;
+        }
+
+        .fi-dashboard-page .fi-wi-stats-overview-stat {
+            min-width: 0;
+            min-height: 6.5rem;
+            padding: 1rem;
+            border-radius: 1rem;
+        }
+
+        .fi-dashboard-page .fi-wi-stats-overview-stat-label {
+            font-size: 0.72rem;
+        }
+
+        .fi-dashboard-page .fi-wi-stats-overview-stat-value {
+            overflow-wrap: anywhere;
+            font-size: 1.25rem;
+            line-height: 1.3;
+        }
+
+        .fi-dashboard-page .fi-wi-stats-overview-stat:first-child {
+            border-color: #cce8fa;
+            background: #eaf6ff;
+        }
+
+        .fi-dashboard-page .fi-wi-stats-overview-stat:first-child .fi-wi-stats-overview-stat-value {
+            color: #07518e;
+        }
+
+        .carbay-install-prompt:not([hidden]) {
+            position: fixed;
+            z-index: 39;
+            right: 0.75rem;
+            bottom: calc(4.8rem + env(safe-area-inset-bottom));
+            left: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            padding: 0.75rem;
+            border: 1px solid #dce8f1;
+            border-radius: 1rem;
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: 0 0.8rem 2rem rgba(20, 38, 55, 0.16);
+            color: #142637;
+        }
+
+        .carbay-install-prompt > img {
+            width: 2.6rem;
+            height: 2.6rem;
+            flex: 0 0 auto;
+            border-radius: 0.7rem;
+        }
+
+        .carbay-install-copy {
+            display: grid;
+            min-width: 0;
+            flex: 1;
+            gap: 0.15rem;
+            font-size: 0.72rem;
+            line-height: 1.35;
+        }
+
+        .carbay-install-copy strong {
+            font-size: 0.82rem;
+        }
+
+        .carbay-install-ios,
+        .carbay-install-prompt.is-ios .carbay-install-android {
+            display: none;
+        }
+
+        .carbay-install-prompt.is-ios .carbay-install-ios {
+            display: inline;
+        }
+
+        .carbay-install-copy .carbay-install-ios-steps:not([hidden]) {
+            display: inline;
+            color: #0075d4;
+            font-weight: 600;
+        }
+
+        .carbay-install-action,
+        .carbay-install-ios-action {
+            min-height: 2.75rem;
+            flex: 0 0 auto;
+            padding: 0 0.75rem;
+            border: 0;
+            border-radius: 0.7rem;
+            background: #0096ff;
+            color: #fff;
+            font: inherit;
+            font-size: 0.75rem;
+            font-weight: 750;
+        }
+
+        .carbay-install-prompt.is-ios .carbay-install-ios-action:not([hidden]) {
+            display: block;
+        }
+
+        .carbay-install-dismiss {
+            display: grid;
+            width: 2.5rem;
+            height: 2.75rem;
+            flex: 0 0 auto;
+            place-items: center;
+            border: 0;
+            border-radius: 0.7rem;
+            background: transparent;
+            color: #5b7081;
+            font-size: 1.35rem;
+        }
+
+        .carbay-mobile-header {
+            display: flex;
+            min-width: 0;
+            align-items: center;
+            gap: 0.5rem;
+            color: #142637;
+            font-size: 0.9rem;
+            font-weight: 750;
+            text-decoration: none;
+        }
+
+        .carbay-mobile-header img {
+            width: 3rem;
+            height: 2.6rem;
+            object-fit: contain;
+        }
+
+        .carbay-mobile-header-logo-dark {
+            display: none;
+        }
+
+        .fi-topbar > nav {
+            height: 3.5rem;
+            gap: 0.55rem;
+            padding-right: 0.75rem;
+            padding-left: 0.75rem;
+        }
+
+        .fi-topbar-open-sidebar-btn {
+            display: none;
+        }
+
+        .fi-topbar-close-sidebar-btn,
+        .fi-sidebar,
+        .fi-sidebar-close-overlay {
+            display: none !important;
+        }
+
+        .fi-main-ctn {
+            padding: 1rem 0.85rem calc(6.5rem + env(safe-area-inset-bottom));
+        }
+
+        .carbay-mobile-sticky-action {
+            bottom: calc(4.35rem + env(safe-area-inset-bottom));
+            border-radius: 1rem;
+        }
+
+        .carbay-check-in-form {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .carbay-check-in-form select,
+        .carbay-check-in-form button {
+            width: 100%;
+            min-height: 2.75rem;
+        }
+
+        .fi-page {
+            gap: 1rem;
+        }
+
+        .fi-header {
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+
+        .fi-header-heading {
+            font-size: 1.45rem;
+            line-height: 1.25;
+        }
+
+        .fi-btn {
+            min-height: 2.75rem;
+        }
+
+        .fi-input-wrp input,
+        .fi-input-wrp select,
+        .fi-input-wrp textarea,
+        .fi-select-input,
+        .fi-fo-field-wrp input,
+        .fi-fo-field-wrp select,
+        .fi-fo-field-wrp textarea {
+            min-height: 2.75rem;
+        }
+
+        .fi-ta-ctn,
+        .fi-ta-content {
+            max-width: 100%;
+            overflow-x: auto;
+            overscroll-behavior-x: contain;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .carbay-mobile-dock {
+            position: fixed;
+            z-index: 40;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            align-items: stretch;
+            min-height: 3.75rem;
+            padding: 0.35rem 0.3rem calc(0.35rem + env(safe-area-inset-bottom));
+            border-top: 1px solid #dce8f1;
+            background: rgba(255, 255, 255, 0.96);
+            box-shadow: 0 -0.45rem 1.5rem rgba(20, 38, 55, 0.08);
+            backdrop-filter: blur(16px);
+        }
+
+        .carbay-mobile-dock.has-create-action {
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+        }
+
+        .carbay-mobile-dock-item,
+        .carbay-mobile-more > summary {
+            display: flex;
+            min-width: 0;
+            min-height: 3rem;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.2rem;
+            border-radius: 0.75rem;
+            color: #5b7081;
+            font-size: 0.62rem;
+            font-weight: 650;
+            line-height: 1.1;
+            text-align: center;
+            text-decoration: none;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .carbay-mobile-dock-item > svg,
+        .carbay-mobile-more > summary > svg {
+            width: 1.3rem;
+            height: 1.3rem;
+        }
+
+        .carbay-mobile-dock-item > span,
+        .carbay-mobile-more > summary > span {
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .carbay-mobile-dock-item.is-active {
+            color: #0075d4;
+            background: #eaf6ff;
+        }
+
+        .carbay-mobile-dock-create {
+            display: flex;
+            min-width: 0;
+            min-height: 3rem;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.1rem;
+            margin-top: -1.1rem;
+            color: #5b7081;
+            font-size: 0.62rem;
+            font-weight: 700;
+            line-height: 1.1;
+            text-decoration: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .carbay-mobile-dock-create-icon {
+            display: grid;
+            width: 3rem;
+            height: 3rem;
+            place-items: center;
+            border: 0.22rem solid #fff;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #087ed0, #00518d);
+            box-shadow: 0 0.35rem 0.9rem rgba(0, 87, 158, 0.28);
+            color: #fff;
+        }
+
+        html.dark .carbay-mobile-dock-create {
+            color: #b3c2d0;
+        }
+
+        html.dark .carbay-mobile-dock-create-icon {
+            border-color: #111c28;
+        }
+
+        html.dark .fi-dashboard-page .fi-wi-stats-overview-stat:first-child {
+            border-color: #244e70;
+            background: #153a58;
+        }
+
+        html.dark .fi-dashboard-page .fi-wi-stats-overview-stat:first-child .fi-wi-stats-overview-stat-value {
+            color: #d8efff;
+        }
+
+        .carbay-mobile-dock-create-icon svg {
+            width: 1.4rem;
+            height: 1.4rem;
+            stroke-width: 2.5;
+        }
+
+        .carbay-mobile-dock-create.is-active {
+            color: #0075d4;
+        }
+
+        .carbay-mobile-more {
+            position: relative;
+            min-width: 0;
+        }
+
+        .carbay-mobile-more > summary {
+            list-style: none;
+        }
+
+        .carbay-mobile-more > summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .carbay-mobile-more[open] > summary {
+            color: #0075d4;
+            background: #eaf6ff;
+        }
+
+        .carbay-mobile-more-panel {
+            position: fixed;
+            right: 0.75rem;
+            bottom: calc(4.6rem + env(safe-area-inset-bottom));
+            display: none;
+            width: min(22rem, calc(100vw - 1.5rem));
+            max-height: min(70vh, 34rem);
+            overflow-y: auto;
+            padding: 0.75rem;
+            border: 1px solid #dce8f1;
+            border-radius: 1rem;
+            background: #fff;
+            box-shadow: 0 1rem 3rem rgba(20, 38, 55, 0.2);
+            overscroll-behavior: contain;
+        }
+
+        .carbay-mobile-more[open] .carbay-mobile-more-panel {
+            display: block;
+        }
+
+        .carbay-mobile-more-heading {
+            margin: 0.5rem 0.4rem 0.3rem;
+            color: #5b7081;
+            font-size: 0.68rem;
+            font-weight: 750;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .carbay-mobile-more-panel a {
+            display: flex;
+            min-height: 2.75rem;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 0.6rem;
+            border-radius: 0.65rem;
+            color: #142637;
+            font-size: 0.88rem;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .carbay-mobile-more-panel a:hover,
+        .carbay-mobile-more-panel a:focus-visible {
+            background: #eaf6ff;
+        }
+
+        .carbay-mobile-more-panel a svg {
+            width: 1.2rem;
+            height: 1.2rem;
+            flex: 0 0 auto;
+            color: #0075d4;
+        }
+
+        html.dark .carbay-mobile-header {
+            color: #f4f8fc;
+        }
+
+        html.dark .carbay-mobile-header-logo-light {
+            display: none;
+        }
+
+        html.dark .carbay-mobile-header-logo-dark {
+            display: block;
+        }
+
+        html.dark .carbay-install-prompt:not([hidden]) {
+            border-color: #2d4052;
+            background: rgba(23, 35, 49, 0.98);
+            color: #f4f8fc;
+        }
+
+        html.dark .carbay-install-copy .carbay-install-ios-steps:not([hidden]) {
+            color: #8ed0ff;
+        }
+
+        html.dark .carbay-install-dismiss {
+            color: #b3c2d0;
+        }
+
+        html.dark .carbay-mobile-dock {
+            border-color: #26384a;
+            background: rgba(17, 28, 40, 0.96);
+            box-shadow: 0 -0.45rem 1.5rem rgba(0, 0, 0, 0.2);
+        }
+
+        html.dark .carbay-mobile-dock-item,
+        html.dark .carbay-mobile-more > summary {
+            color: #b3c2d0;
+        }
+
+        html.dark .carbay-mobile-dock-item.is-active,
+        html.dark .carbay-mobile-more[open] > summary {
+            color: #8ed0ff;
+            background: #153a58;
+        }
+
+        html.dark .carbay-mobile-more-panel {
+            border-color: #2d4052;
+            background: #172331;
+        }
+
+        html.dark .carbay-mobile-more-heading {
+            color: #a5b7c8;
+        }
+
+        html.dark .carbay-mobile-more-panel a {
+            color: #f4f8fc;
+        }
+
+        html.dark .carbay-mobile-more-panel a:hover,
+        html.dark .carbay-mobile-more-panel a:focus-visible {
+            background: #203b53;
+        }
     }
 
     @media (prefers-reduced-motion: reduce) {

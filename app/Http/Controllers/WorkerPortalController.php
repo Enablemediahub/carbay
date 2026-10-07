@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Branch;
+use App\Models\Feature;
 use App\Models\Scopes\SaleTenantScope;
 use App\Models\Scopes\TenantScope;
 use App\Models\Tenant;
 use App\Models\WashSale;
 use App\Models\Worker;
+use App\Support\DashboardSales;
 use App\Services\WalletService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,19 +28,48 @@ class WorkerPortalController extends Controller
             return redirect()->route('worker.dashboard');
         }
 
-        return view('worker.login');
+        $feature = Feature::query()
+            ->where('key', 'worker_pin_login')
+            ->where('is_active', true)
+            ->first();
+        $companies = collect();
+
+        if ($feature) {
+            $companies = Tenant::withoutGlobalScopes()
+                ->where('status', 'active')
+                ->with([
+                    'tenantFeatures' => fn ($query) => $query
+                        ->withoutGlobalScopes()
+                        ->where('feature_id', $feature->id),
+                    'package.packageFeatures' => fn ($query) => $query
+                        ->where('feature_id', $feature->id),
+                ])
+                ->get()
+                ->filter(function (Tenant $tenant): bool {
+                    $override = $tenant->tenantFeatures->first();
+                    if ($override) {
+                        return $override->enabled;
+                    }
+
+                    return (bool) $tenant->package?->packageFeatures->first()?->enabled;
+                })
+                ->sortBy('name')
+                ->values();
+        }
+
+        return view('worker.login', ['companies' => $companies]);
     }
 
     public function login(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'company_email' => ['required', 'email', 'max:255'],
+            'company_id' => ['required', 'integer', 'exists:tenants,id'],
             'phone' => ['required', 'string', 'max:30'],
             'pin' => ['required', 'digits_between:4,12'],
         ]);
 
         $tenant = Tenant::withoutGlobalScopes()
-            ->where('email', $data['company_email'])
+            ->whereKey($data['company_id'])
             ->where('status', 'active')
             ->first();
 
@@ -56,14 +87,14 @@ class WorkerPortalController extends Controller
             ]);
         }
 
-        RateLimiter::clear($this->identityKey($data['company_email'], $data['phone']));
+        RateLimiter::clear($this->identityKey((int) $data['company_id'], $data['phone']));
         Auth::guard('worker')->login($worker);
         $request->session()->regenerate();
 
         return redirect()->route('worker.dashboard');
     }
 
-    public function dashboard(Request $request): View
+    public function dashboard(Request $request, DashboardSales $dashboardSales): View
     {
         /** @var Worker $worker */
         $worker = Auth::guard('worker')->user();
@@ -90,7 +121,7 @@ class WorkerPortalController extends Controller
             'branch' => Branch::withoutGlobalScopes()
                 ->where('tenant_id', $worker->tenant_id)
                 ->findOrFail($worker->branch_id),
-            'todayTotal' => (float) (clone $todaySales)->sum('total_amount') + (float) (clone $todayJobs)->sum('jobs.total_amount'),
+            'todayTotal' => $dashboardSales->workerToday($worker),
             'todayCount' => (clone $todaySales)->count() + (clone $todayJobs)->count(),
             'weekCount' => (clone $jobQuery)->where('jobs.status', 'completed')->whereBetween('jobs.created_at', [now()->startOfWeek(), now()->endOfWeek()])->count()
                 + $weekSales->count(),
@@ -134,9 +165,9 @@ class WorkerPortalController extends Controller
         return redirect()->route('worker.dashboard')->with('status', 'Payout request sent to your manager.');
     }
 
-    private function identityKey(string $companyEmail, string $phone): string
+    private function identityKey(int $companyId, string $phone): string
     {
-        return 'worker-identity:'.strtolower($companyEmail).'|'.preg_replace('/\D+/', '', $phone);
+        return 'worker-identity:'.$companyId.'|'.preg_replace('/\D+/', '', $phone);
     }
 
     private function earnings(Worker $worker, Carbon $from, Carbon $to): float

@@ -2,7 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Filament\App\Pages\CashReconciliationPage;
 use App\Filament\App\Pages\NewWashJob;
+use App\Filament\App\Pages\PayoutApprovalPage;
+use App\Filament\App\Pages\TodayJobs;
+use App\Filament\App\Pages\WorkerCheckInPage;
 use App\Models\Feature;
 use App\Models\Job;
 use App\Models\Package;
@@ -13,6 +17,8 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Models\VehicleCategory;
 use App\Models\Wallet;
+use App\Models\Worker;
+use App\Support\DashboardSales;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -110,17 +116,74 @@ class ManagerJobTest extends TestCase
         ]);
 
         $this->actingAs(User::withoutGlobalScopes()->findOrFail($managerId));
+        $this->get('/app')
+            ->assertOk()
+            ->assertSee('New job')
+            ->assertSee('Start a wash job')
+            ->assertSee('Sales collected today')
+            ->assertSee('Main branch')
+            ->assertSee('This week')
+            ->assertSee('Jobs completed today')
+            ->assertSee('Open jobs')
+            ->assertSee('Active workers')
+            ->assertSee('Active branches')
+            ->assertSee('Sales by branch this month')
+            ->assertSee('Top workers this month')
+            ->assertSee('Top services this month')
+            ->assertSee(NewWashJob::getUrl(panel: 'app'), false);
+        $this->get(NewWashJob::getUrl(panel: 'app'))
+            ->assertOk()
+            ->assertSee('Save wash job')
+            ->assertSee('Scan plate live')
+            ->assertSee('processed locally');
+        foreach ([
+            TodayJobs::class,
+            CashReconciliationPage::class,
+            WorkerCheckInPage::class,
+            PayoutApprovalPage::class,
+        ] as $managerPage) {
+            $this->get($managerPage::getUrl(panel: 'app'))->assertOk();
+        }
+
         Livewire::test(NewWashJob::class)
+            ->assertSee('carbay-new-wash-job')
+            ->assertSee('acceptLocalPlateScan')
+            ->call('acceptLocalPlateScan', 'gr1234-24', 0.91)
+            ->assertSet('plate', 'GR1234-24')
+            ->assertSet('plateConfidence', 0.91)
+            ->assertSet('plateConfirmed', true);
+
+        Livewire::test(NewWashJob::class)
+            ->call('acceptLocalPlateScan', 'not-a-plate', 0.91)
+            ->assertHasErrors(['plate']);
+
+        Livewire::test(NewWashJob::class)
+            ->call('acceptLocalPlateScan', 'GR1234-24', 0.55)
+            ->assertSet('plate', 'GR1234-24')
+            ->assertSet('plateConfirmed', false);
+
+        Livewire::test(NewWashJob::class)
+            ->call('acceptLocalPlateScan', 'GR1234-24', 1.1)
+            ->assertHasErrors(['confidence']);
+
+        Livewire::test(NewWashJob::class)
+            ->assertSee('carbay-mobile-sticky-action')
             ->set('plate', 'GR 1234-24')
             ->set('plateScanId', $scan->id)
             ->set('plateConfidence', 0.64)
             ->set('vehicleCategoryId', (string) $category->id)
             ->set('selectedServices', [(string) $service->id])
-            ->set('selectedWorkers', [(string) $workerId])
             ->set('paymentMethod', 'cash')
+            ->call('submit')
+            ->assertHasErrors(['selectedWorkers'])
+            ->set('selectedWorkers', [(string) $workerId])
             ->call('submit')
             ->assertHasErrors(['plate'])
             ->set('plateConfirmed', true)
+            ->set('workerShares.'.$workerId, 0)
+            ->call('submit')
+            ->assertHasErrors(['workerShares'])
+            ->set('workerShares.'.$workerId, 18)
             ->call('submit')
             ->assertHasNoErrors();
 
@@ -138,6 +201,20 @@ class ManagerJobTest extends TestCase
             'company_share' => 42,
             'worker_share' => 18,
         ]);
+        $jobId = DB::table('jobs')->where('plate', 'GR 1234-24')->value('id');
+        $this->assertDatabaseHas('job_workers', [
+            'job_id' => $jobId,
+            'worker_id' => $workerId,
+            'share_amount' => 18,
+            'payout_mode' => 'instant',
+        ]);
+        $this->assertDatabaseHas('wallet_transactions', [
+            'worker_id' => $workerId,
+            'job_id' => $jobId,
+            'amount' => 18,
+            'type' => 'credit',
+            'status' => 'paid',
+        ]);
         $this->assertDatabaseHas('payments', [
             'manager_id' => $managerId,
             'method' => 'cash',
@@ -145,6 +222,16 @@ class ManagerJobTest extends TestCase
             'amount' => 60,
         ]);
         $this->assertSame('18.00', Wallet::query()->where('worker_id', $workerId)->firstOrFail()->available_balance);
+        $sales = app(DashboardSales::class);
+        $this->assertSame(60.0, $sales->tenantToday($tenant->id, $branchId));
+        $this->assertSame(60.0, $sales->tenantToday($tenant->id));
+        $this->assertSame(60.0, $sales->tenantBetween($tenant->id, $branchId, today()->startOfDay(), today()->endOfDay()));
+        $this->assertSame(60.0, $sales->platformToday());
+        $this->get('/app')
+            ->assertOk()
+            ->assertSee('GH₵ 60.00');
+        DB::table('jobs')->where('plate', 'GR 1234-24')->update(['status' => 'completed']);
+        $this->assertSame(60.0, $sales->workerToday(Worker::withoutGlobalScopes()->findOrFail($workerId)));
         $this->assertDatabaseHas('plate_scans', [
             'id' => $scan->id,
             'job_id' => DB::table('jobs')->where('plate', 'GR 1234-24')->value('id'),
