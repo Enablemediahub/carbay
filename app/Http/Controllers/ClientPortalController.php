@@ -182,6 +182,26 @@ class ClientPortalController extends Controller
     {
         $tenant = $this->tenant($request);
         $client = $request->attributes->get('clientPortalClient');
+        $categories = VehicleCategory::query()
+            ->where(fn ($query) => $query->whereNull('tenant_id')->orWhere('tenant_id', $tenant->id))
+            ->orderBy('name')
+            ->get();
+        $services = Service::query()
+            ->where('is_active', true)
+            ->where(fn ($query) => $query->where('is_global', true)->orWhere('tenant_id', $tenant->id))
+            ->orderBy('name')
+            ->get();
+        $servicePricesByCategory = ServicePrice::withoutGlobalScopes()
+            ->where('tenant_id', $tenant->id)
+            ->where('is_active', true)
+            ->whereIn('vehicle_category_id', $categories->modelKeys())
+            ->whereIn('service_id', $services->modelKeys())
+            ->get(['vehicle_category_id', 'service_id', 'price'])
+            ->groupBy('vehicle_category_id')
+            ->map(fn ($prices) => $prices->mapWithKeys(
+                fn (ServicePrice $price) => [$price->service_id => (float) $price->price],
+            ))
+            ->all();
 
         return view('client.dashboard', [
             'tenant' => $tenant,
@@ -205,9 +225,10 @@ class ClientPortalController extends Controller
                 ->latest()
                 ->limit(20)
                 ->get(),
-            'categories' => VehicleCategory::query()
-                ->where(fn ($query) => $query->whereNull('tenant_id')->orWhere('tenant_id', $tenant->id))
-                ->orderBy('name')->get(),
+            'categories' => $categories,
+            'services' => $services,
+            'servicePricesByCategory' => $servicePricesByCategory,
+            'serviceNamesById' => $services->pluck('name', 'id'),
         ]);
     }
 
@@ -232,7 +253,11 @@ class ClientPortalController extends Controller
         $category = VehicleCategory::query()
             ->where(fn ($query) => $query->whereNull('tenant_id')->orWhere('tenant_id', $tenant->id))
             ->findOrFail($data['vehicle_category_id']);
-        $services = Service::query()->global()->where('is_active', true)->whereIn('id', $data['service_ids'])->get();
+        $services = Service::query()
+            ->where('is_active', true)
+            ->where(fn ($query) => $query->where('is_global', true)->orWhere('tenant_id', $tenant->id))
+            ->whereIn('id', $data['service_ids'])
+            ->get();
         if ($services->count() !== count($data['service_ids'])) {
             throw ValidationException::withMessages(['service_ids' => 'Choose active services.']);
         }

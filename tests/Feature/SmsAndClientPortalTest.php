@@ -81,6 +81,25 @@ class SmsAndClientPortalTest extends TestCase
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+        $customService = Service::query()->create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Portal custom detail',
+            'default_price' => 30,
+            'company_pct' => 80,
+            'worker_pct' => 20,
+            'is_global' => false,
+            'is_active' => true,
+        ]);
+        $otherTenant = $this->createTenant(['client_portal']);
+        $otherTenantService = Service::withoutGlobalScopes()->create([
+            'tenant_id' => $otherTenant->id,
+            'name' => 'Another company service',
+            'default_price' => 90,
+            'company_pct' => 80,
+            'worker_pct' => 20,
+            'is_global' => false,
+            'is_active' => true,
+        ]);
 
         $this->post(route('client.otp.request', ['tenant' => $tenant->id]), [
             'phone' => '+233 24 400 0001',
@@ -106,7 +125,12 @@ class SmsAndClientPortalTest extends TestCase
         $this->get(route('client.dashboard', ['tenant' => $tenant->id]))
             ->assertOk()
             ->assertSee('Ama Customer')
-            ->assertSee('Portal wash');
+            ->assertSee('Portal wash')
+            ->assertSee('Portal custom detail')
+            ->assertSee('GH₵ 45.00')
+            ->assertSee('categoryPrices = JSON.parse', false)
+            ->assertSee('\u00221\u0022:{\u00221\u0022:55}', false)
+            ->assertDontSee('Another company service');
 
         $managerId = DB::table('users')->insertGetId([
             'tenant_id' => $tenant->id,
@@ -150,6 +174,25 @@ class SmsAndClientPortalTest extends TestCase
             'service_type' => 'bay',
         ]);
         $this->assertSame(0, $client->fresh()->loyalty_points);
+
+        $this->post(route('client.bookings.create', ['tenant' => $tenant->id]), [
+            'service_type' => 'bay',
+            'vehicle_category_id' => $category->id,
+            'service_ids' => [$customService->id],
+            'requested_for' => now()->addDays(2)->format('Y-m-d H:i:s'),
+        ])->assertRedirect(route('client.dashboard', ['tenant' => $tenant->id]));
+        $this->assertDatabaseHas('client_bookings', [
+            'tenant_id' => $tenant->id,
+            'client_id' => $client->id,
+            'estimated_amount' => 30,
+        ]);
+
+        $this->post(route('client.bookings.create', ['tenant' => $tenant->id]), [
+            'service_type' => 'bay',
+            'vehicle_category_id' => $category->id,
+            'service_ids' => [$otherTenantService->id],
+            'requested_for' => now()->addDays(3)->format('Y-m-d H:i:s'),
+        ])->assertSessionHasErrors('service_ids');
     }
 
     public function test_reports_page_aggregates_jobs_for_an_export_enabled_ceo(): void
