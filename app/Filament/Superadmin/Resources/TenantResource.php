@@ -4,6 +4,8 @@ namespace App\Filament\Superadmin\Resources;
 
 use App\Filament\Superadmin\Resources\TenantResource\Pages;
 use App\Models\Tenant;
+use App\Rules\UniqueStaffPhone;
+use App\Support\PhoneNumber;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
@@ -32,23 +34,25 @@ class TenantResource extends Resource
             TextInput::make('email')->email()->required()->unique(ignoreRecord: true),
             Select::make('package_id')->relationship('package', 'name')->searchable()->preload(),
             TextInput::make('ceo_name')
-                ->label('CEO name')
+                ->label('Admin / CEO name')
                 ->required()
                 ->maxLength(255)
                 ->visibleOn('create'),
             TextInput::make('ceo_phone')
-                ->label('CEO phone')
+                ->label('Admin / CEO phone')
                 ->tel()
+                ->mutateStateForValidationUsing(fn (?string $state): ?string => PhoneNumber::normalize($state))
+                ->rules(['nullable', 'regex:/^\+?[0-9]{7,15}$/', new UniqueStaffPhone])
                 ->maxLength(30)
                 ->visibleOn('create'),
             TextInput::make('ceo_email')
-                ->label('CEO login email')
+                ->label('Admin / CEO login email')
                 ->email()
                 ->required()
                 ->unique(table: 'users', column: 'email')
                 ->visibleOn('create'),
             TextInput::make('ceo_password')
-                ->label('CEO login password')
+                ->label('Admin / CEO login password')
                 ->password()
                 ->revealable()
                 ->required()

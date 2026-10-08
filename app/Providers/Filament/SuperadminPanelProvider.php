@@ -3,7 +3,11 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Auth\Login;
+use App\Filament\Superadmin\Pages\CompanyOverview;
+use App\Filament\Superadmin\Pages\LandingAppearance;
+use App\Filament\Superadmin\Pages\Subscriptions;
 use App\Filament\Superadmin\Widgets\TenantStats;
+use App\Models\PlatformSetting;
 use App\Support\DashboardSales;
 use Filament\Enums\ThemeMode;
 use Filament\Facades\Filament;
@@ -34,7 +38,7 @@ class SuperadminPanelProvider extends PanelProvider
             ->id('superadmin')
             ->path('superadmin')
             ->login(Login::class)
-            ->brandName('Carbay+ Super Admin')
+            ->brandName(fn (): string => (PlatformSetting::appearance()->brand_name ?: 'Carbay+').' Super Admin')
             ->brandLogo(fn (): View => view('filament.brand'))
             ->darkModeBrandLogo(fn (): View => view('filament.brand-dark'))
             ->brandLogoHeight('4rem')
@@ -42,6 +46,8 @@ class SuperadminPanelProvider extends PanelProvider
             ->renderHook(PanelsRenderHook::HEAD_START, fn (): View => view('filament.pwa-head'))
             ->renderHook(PanelsRenderHook::BODY_END, fn (): View => view('filament.pwa-register'))
             ->renderHook(PanelsRenderHook::BODY_END, fn (): View => view('filament.mobile-navigation'))
+            ->renderHook(PanelsRenderHook::FOOTER, fn (): View => view('shared.developer-footer'))
+            ->renderHook(PanelsRenderHook::SIMPLE_PAGE_END, fn (): View => view('shared.developer-footer'))
             ->renderHook(
                 PanelsRenderHook::PAGE_START,
                 fn (): View => view('filament.superadmin.mobile-dashboard', [
@@ -60,7 +66,7 @@ class SuperadminPanelProvider extends PanelProvider
                 scopes: Login::class,
             )
             ->discoverResources(in: app_path('Filament/Superadmin/Resources'), for: 'App\\Filament\\Superadmin\\Resources')
-            ->pages([Dashboard::class])
+            ->pages([Dashboard::class, LandingAppearance::class, CompanyOverview::class, Subscriptions::class])
             ->discoverWidgets(in: app_path('Filament/Superadmin/Widgets'), for: 'App\\Filament\\Superadmin\\Widgets')
             ->widgets([TenantStats::class, Widgets\AccountWidget::class])
             ->middleware([

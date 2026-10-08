@@ -395,7 +395,7 @@ class TenantIsolationTest extends TestCase
         $this->assertSame('60.00', $sale->items->sole()->total_amount);
         $this->assertSame('Sale service (Sale category)', $sale->items->sole()->service_name);
         $this->get('/app/wash-sales')->assertOk();
-        $this->get('/app/wash-sales/create')->assertOk();
+        $this->get('/app/wash-sales/create')->assertNotFound();
     }
 
     public function test_sale_recorder_rejects_payment_methods_not_enabled_for_tenant(): void

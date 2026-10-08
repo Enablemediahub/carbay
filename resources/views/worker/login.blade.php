@@ -3,9 +3,9 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
+    <link rel="manifest" href="{{ route('pwa.manifest', ['workspace' => 'worker'], false) }}">
     <meta name="theme-color" content="#0096FF">
-    <link rel="icon" href="{{ asset('carbay-favicon-512.png') }}" type="image/png">
+    <link rel="icon" href="{{ \App\Models\PlatformSetting::appearance()->assetUrl('icon-512') }}" type="image/png">
     <title>Worker sign in · Carbay+</title>
     <style>
         :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, sans-serif; color: #173c32; background: #f4f5ec; }
@@ -29,7 +29,7 @@
 </head>
 <body>
 <main>
-    <div class="brand"><img class="brand-logo" src="{{ asset('carbay-logo.png') }}" alt="Carbay+"></div>
+    <div class="brand"><img class="brand-logo" src="{{ \App\Models\PlatformSetting::appearance()->assetUrl('logo') }}" alt="Carbay+"></div>
     <h1>Team sign in</h1>
     <p class="intro">Choose your company, then enter your registered phone number and worker PIN to view your wash activity.</p>
 
@@ -59,6 +59,7 @@
         <button type="submit">Sign in securely</button>
     </form>
     <p class="privacy">Your PIN is verified securely and never displayed. Ask your manager if you need a PIN reset.</p>
+    @include('shared.developer-footer')
 </main>
 <script>
     if ('serviceWorker' in navigator) {

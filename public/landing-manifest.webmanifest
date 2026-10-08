@@ -1,0 +1,15 @@
+{
+    "id": "/",
+    "name": "Carbay+",
+    "short_name": "Carbay+",
+    "description": "Your washing bay, team and earnings in one place.",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "background_color": "#edf6ff",
+    "theme_color": "#07518e",
+    "icons": [
+        { "src": "/carbay-favicon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+        { "src": "/carbay-favicon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    ]
+}

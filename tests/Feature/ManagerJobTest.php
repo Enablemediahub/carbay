@@ -3,12 +3,17 @@
 namespace Tests\Feature;
 
 use App\Filament\App\Pages\CashReconciliationPage;
+use App\Filament\App\Pages\DataPrivacy;
 use App\Filament\App\Pages\NewWashJob;
 use App\Filament\App\Pages\PayoutApprovalPage;
+use App\Filament\App\Pages\ServiceAgreement;
 use App\Filament\App\Pages\TodayJobs;
 use App\Filament\App\Pages\WorkerCheckInPage;
+use App\Filament\App\Resources\WashSaleResource;
+use App\Filament\App\Resources\WashSaleResource\Pages\ListWashSales;
 use App\Models\Feature;
 use App\Models\Job;
+use App\Models\JobWorker;
 use App\Models\Package;
 use App\Models\Payment;
 use App\Models\PlateScan;
@@ -18,8 +23,11 @@ use App\Models\User;
 use App\Models\VehicleCategory;
 use App\Models\Wallet;
 use App\Models\Worker;
+use App\Services\WalletService;
 use App\Support\DashboardSales;
+use App\Support\WorkerSettlement;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
@@ -31,6 +39,7 @@ class ManagerJobTest extends TestCase
 
     public function test_manager_can_record_a_wash_job_and_credit_the_assigned_worker(): void
     {
+        $this->travelTo(Carbon::parse('2026-10-08 12:00:00'));
         $package = Package::query()->create([
             'name' => 'Job package',
             'price' => 0,
@@ -131,16 +140,23 @@ class ManagerJobTest extends TestCase
             ->assertSee('Top workers this month')
             ->assertSee('Top services this month')
             ->assertSee(NewWashJob::getUrl(panel: 'app'), false);
-        $this->get(NewWashJob::getUrl(panel: 'app'))
+        $jobPage = $this->get(NewWashJob::getUrl(panel: 'app'))
             ->assertOk()
             ->assertSee('Save wash job')
             ->assertSee('Scan plate live')
             ->assertSee('processed locally');
+        $dom = new \DOMDocument;
+        @$dom->loadHTML($jobPage->getContent());
+        $xpath = new \DOMXPath($dom);
+        $this->assertSame(1, $xpath->query('//div[contains(@class, "carbay-new-wash-job")][@*[name()="wire:id"]]')->length);
+        $this->assertSame(0, $xpath->query('//script[@*[name()="wire:id"]]')->length);
         foreach ([
             TodayJobs::class,
             CashReconciliationPage::class,
             WorkerCheckInPage::class,
             PayoutApprovalPage::class,
+            ServiceAgreement::class,
+            DataPrivacy::class,
         ] as $managerPage) {
             $this->get($managerPage::getUrl(panel: 'app'))->assertOk();
         }
@@ -148,6 +164,14 @@ class ManagerJobTest extends TestCase
         Livewire::test(NewWashJob::class)
             ->assertSee('carbay-new-wash-job')
             ->assertSee('acceptLocalPlateScan')
+            ->call('selectClientMode', true)
+            ->assertSet('createClient', true)
+            ->assertSet('clientId', null)
+            ->assertSee('id="client-name"', false)
+            ->assertSee('id="client-phone"', false)
+            ->call('selectClientMode', false)
+            ->assertSet('createClient', false)
+            ->assertSee('id="client-search"', false)
             ->call('acceptLocalPlateScan', 'gr1234-24', 0.91)
             ->assertSet('plate', 'GR1234-24')
             ->assertSet('plateConfidence', 0.91)
@@ -163,6 +187,13 @@ class ManagerJobTest extends TestCase
             ->assertSet('plateConfirmed', false);
 
         Livewire::test(NewWashJob::class)
+            ->call('acceptLocalPlateScan', 'GR1234-24', 0)
+            ->assertSet('plate', 'GR1234-24')
+            ->assertSet('localPlateScanned', true)
+            ->assertSet('plateConfirmed', false)
+            ->assertSee('I confirm this registration is correct');
+
+        Livewire::test(NewWashJob::class)
             ->call('acceptLocalPlateScan', 'GR1234-24', 1.1)
             ->assertHasErrors(['confidence']);
 
@@ -176,14 +207,15 @@ class ManagerJobTest extends TestCase
             ->set('paymentMethod', 'cash')
             ->call('submit')
             ->assertHasErrors(['selectedWorkers'])
-            ->set('selectedWorkers', [(string) $workerId])
+            ->set('workerToAdd', (string) $workerId)
+            ->assertSet('selectedWorkers', [$workerId])
+            ->call('removeWorker', $workerId)
+            ->assertSet('selectedWorkers', [])
+            ->set('workerToAdd', (string) $workerId)
             ->call('submit')
             ->assertHasErrors(['plate'])
             ->set('plateConfirmed', true)
             ->set('workerShares.'.$workerId, 0)
-            ->call('submit')
-            ->assertHasErrors(['workerShares'])
-            ->set('workerShares.'.$workerId, 18)
             ->call('submit')
             ->assertHasNoErrors();
 
@@ -230,13 +262,106 @@ class ManagerJobTest extends TestCase
         $this->get('/app')
             ->assertOk()
             ->assertSee('GH₵ 60.00');
-        DB::table('jobs')->where('plate', 'GR 1234-24')->update(['status' => 'completed']);
+        $job = Job::query()->findOrFail($jobId);
+        Livewire::test(ListWashSales::class)->assertCanNotSeeTableRecords([$job]);
+        Livewire::test(TodayJobs::class)->call('complete', $jobId)->assertHasNoErrors();
+        $saleJob = WashSaleResource::getEloquentQuery()->findOrFail($jobId);
+        Livewire::test(ListWashSales::class)
+            ->assertCanSeeTableRecords([$job->fresh()])
+            ->assertSee('Ama')
+            ->assertTableColumnStateSet('worker_share_total', 18, $saleJob)
+            ->assertTableColumnStateSet('company_share_total', 42, $saleJob);
+        Livewire::test(TodayJobs::class)->call('complete', $jobId)->assertHasNoErrors();
+        Livewire::test(ListWashSales::class)->assertCountTableRecords(1);
+        $job->update(['payment_status' => 'pending']);
+        Livewire::test(ListWashSales::class)->assertCanSeeTableRecords([$job]);
+        $job->update(['status' => 'cancelled']);
+        Livewire::test(ListWashSales::class)->assertCanNotSeeTableRecords([$job]);
+        $job->update(['status' => 'completed', 'payment_status' => 'paid']);
+        $this->get('/app/wash-sales')->assertOk()->assertDontSee('Record sale');
+        $this->get('/app/wash-sales/create')->assertNotFound();
+        $this->assertDatabaseCount('wash_sales', 0);
+        $otherBranch = DB::table('branches')->insertGetId([
+            'tenant_id' => $tenant->id, 'name' => 'Other branch', 'status' => 'active',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $hiddenJob = $job->replicate();
+        $hiddenJob->branch_id = $otherBranch;
+        $hiddenJob->save();
+        Livewire::test(ListWashSales::class)->assertCanNotSeeTableRecords([$hiddenJob]);
+        $hiddenJob->delete();
+        $worker = Worker::query()->findOrFail($workerId);
+        $this->assertEquals(18, app(WorkerSettlement::class)->today($worker)['owed']);
+        Livewire::test(TodayJobs::class)->call('payWorker', $workerId, 18)->assertHasNoErrors()->assertSee('Fully paid for today');
+        $this->assertEquals(0, app(WorkerSettlement::class)->today($worker)['owed']);
+        $this->assertEquals(18, app(WorkerSettlement::class)->today($worker)['paid']);
+        $this->assertSame('0.00', Wallet::query()->where('worker_id', $workerId)->firstOrFail()->available_balance);
+        Livewire::test(TodayJobs::class)->call('payWorker', $workerId, 18)->assertHasErrors('payout');
+        $this->assertDatabaseCount('payouts', 1);
         $this->assertSame(60.0, $sales->workerToday(Worker::withoutGlobalScopes()->findOrFail($workerId)));
         $this->assertDatabaseHas('plate_scans', [
             'id' => $scan->id,
             'job_id' => DB::table('jobs')->where('plate', 'GR 1234-24')->value('id'),
             'corrected_value' => 'GR 1234-24',
         ]);
+
+        $secondWorker = Worker::query()->create([
+            'tenant_id' => $tenant->id, 'branch_id' => $branchId, 'name' => 'Second Worker',
+            'phone' => '0244000097', 'pin' => '1234', 'status' => 'active', 'payout_mode' => 'daily',
+        ]);
+        DB::table('service_prices')->where('tenant_id', $tenant->id)->update(['price' => 60.04]);
+        Livewire::test(NewWashJob::class)
+            ->set('plate', 'GR4321-24')->set('vehicleCategoryId', (string) $category->id)
+            ->set('selectedServices', [(string) $service->id])
+            ->set('selectedWorkers', [(string) $secondWorker->id, (string) $workerId])
+            ->set('workerShares', [$workerId => 17, $secondWorker->id => 1.01])
+            ->call('submit')->assertHasNoErrors();
+        $splitJob = Job::query()->where('plate', 'GR4321-24')->firstOrFail();
+        $this->assertDatabaseHas('job_workers', ['job_id' => $splitJob->id, 'worker_id' => $workerId, 'share_amount' => 9]);
+        $this->assertDatabaseHas('job_workers', ['job_id' => $splitJob->id, 'worker_id' => $secondWorker->id, 'share_amount' => 9.01]);
+        $this->assertDatabaseHas('wallet_transactions', ['job_id' => $splitJob->id, 'worker_id' => $secondWorker->id, 'amount' => 9.01]);
+        Livewire::test(TodayJobs::class)->call('complete', $splitJob->id)->assertHasNoErrors();
+        Livewire::test(TodayJobs::class)->set('workerId', (string) $secondWorker->id)
+            ->assertSee('GR4321-24')->assertDontSee('GR 1234-24');
+        Livewire::test(TodayJobs::class)->set('paymentMethods.'.$secondWorker->id, 'momo')
+            ->call('payWorker', $secondWorker->id, 9.01)->assertHasErrors('reference');
+        Livewire::test(TodayJobs::class)->set('paymentMethods.'.$secondWorker->id, 'momo')
+            ->set('paymentReferences.'.$secondWorker->id, 'TRANSFER-TEST')
+            ->call('payWorker', $secondWorker->id, 9.01)->assertHasNoErrors();
+        $this->assertSame('0.00', Wallet::query()->where('worker_id', $secondWorker->id)->firstOrFail()->pending_balance);
+        $this->assertSame('0.00', Wallet::query()->where('worker_id', $secondWorker->id)->firstOrFail()->available_balance);
+        $this->assertEquals(0, app(WorkerSettlement::class)->today($secondWorker)['owed']);
+        $request = app(WalletService::class)->payout($worker, 3, 'cash');
+        Livewire::test(TodayJobs::class)->call('payWorker', $workerId, 9)->assertHasErrors('payout');
+        app(WalletService::class)->settlePayout($request, 'cash', '', $managerId);
+        $this->assertEquals(6, app(WorkerSettlement::class)->today($worker)['owed']);
+        Livewire::test(TodayJobs::class)->call('payWorker', $workerId, 9)->assertHasErrors('payout');
+        Livewire::test(TodayJobs::class)->call('payWorker', $workerId, 6)->assertHasNoErrors();
+        $this->assertEquals(27, app(WorkerSettlement::class)->today($worker)['earned']);
+        $this->assertEquals(27, app(WorkerSettlement::class)->today($worker)['paid']);
+        $this->assertEquals(0, app(WorkerSettlement::class)->today($worker)['owed']);
+        $pinFeature = Feature::query()->create(['key' => 'worker_pin_login', 'name' => 'Worker PIN', 'is_active' => true]);
+        $package->features()->attach($pinFeature->id, ['enabled' => true]);
+        $this->actingAs($worker, 'worker')->get(route('worker.dashboard'))->assertOk()
+            ->assertSee('Paid from today\'s earnings', false)->assertSee('Still owed for today')->assertSee('Fully paid for today')
+            ->assertViewHas('todaySettlement', fn (array $summary): bool => $summary['earned'] == 27 && $summary['paid'] == 27 && $summary['owed'] == 0);
+        $job->forceFill(['created_at' => now()->startOfMonth()->subDay()])->save();
+        foreach ([['date' => now()->startOfWeek()->subDay(), 'share' => 13], ['date' => now()->startOfYear()->subDay(), 'share' => 99]] as $entry) {
+            $historical = $job->replicate();
+            $historical->created_at = $entry['date'];
+            $historical->save();
+            $assignment = JobWorker::query()->create([
+                'job_id' => $historical->id, 'worker_id' => $workerId, 'share_amount' => $entry['share'], 'payout_mode' => 'instant',
+            ]);
+            app(WalletService::class)->credit($worker, $historical, $entry['share'], 'instant', $assignment);
+        }
+        $this->get(route('worker.dashboard'))->assertOk()
+            ->assertViewHas('earningPeriods', fn (array $periods): bool => $periods['today']['earned'] == 9
+                && $periods['week']['earned'] == 9 && $periods['month']['earned'] == 22 && $periods['year']['earned'] == 40
+                && $periods['today']['cars'] == 1 && $periods['month']['cars'] == 2 && $periods['year']['cars'] == 3)
+            ->assertSee('id="hero-earnings" aria-live="polite">GH₵ 9.00', false)
+            ->assertDontSee('Sales from your washes today')->assertDontSee('Earned this month')
+            ->assertSee('value="today" selected', false)->assertSee('value="year"', false);
     }
 
     public function test_paystack_job_defers_worker_wallet_credit_until_signed_success(): void

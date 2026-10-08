@@ -184,15 +184,21 @@ class ClientPortalController extends Controller
         $client = $request->attributes->get('clientPortalClient');
         $categories = VehicleCategory::query()
             ->where(fn ($query) => $query->whereNull('tenant_id')->orWhere('tenant_id', $tenant->id))
+            ->when($tenant->service_pricing_mode === 'ghanaian', fn ($query) => $query->whereHas('servicePrices', fn ($prices) => $prices->withoutGlobalScopes()->where('tenant_id', $tenant->id)->where('pricing_system', 'ghanaian')->where('is_active', true)))
             ->orderBy('name')
             ->get();
         $services = Service::query()
             ->where('is_active', true)
             ->where(fn ($query) => $query->where('is_global', true)->orWhere('tenant_id', $tenant->id))
+            ->where(fn ($query) => $query->whereDoesntHave('prices', fn ($prices) => $prices->withoutGlobalScopes()->where('tenant_id', $tenant->id)->where('pricing_system', 'standalone'))
+                ->orWhereHas('prices', fn ($prices) => $prices->withoutGlobalScopes()->where('tenant_id', $tenant->id)->where('pricing_system', $tenant->service_pricing_mode)->where('is_active', true)))
+            ->when($tenant->service_pricing_mode === 'standard', fn ($query) => $query->whereDoesntHave('prices', fn ($prices) => $prices->withoutGlobalScopes()->where('tenant_id', $tenant->id)->where('pricing_system', 'ghanaian')))
+            ->when($tenant->service_pricing_mode === 'ghanaian', fn ($query) => $query->whereHas('prices', fn ($prices) => $prices->withoutGlobalScopes()->where('tenant_id', $tenant->id)->where('pricing_system', 'ghanaian')->where('is_active', true)))
             ->orderBy('name')
             ->get();
         $servicePricesByCategory = ServicePrice::withoutGlobalScopes()
             ->where('tenant_id', $tenant->id)
+            ->where('pricing_system', $tenant->service_pricing_mode)
             ->where('is_active', true)
             ->whereIn('vehicle_category_id', $categories->modelKeys())
             ->whereIn('service_id', $services->modelKeys())
@@ -257,16 +263,23 @@ class ClientPortalController extends Controller
             ->where('is_active', true)
             ->where(fn ($query) => $query->where('is_global', true)->orWhere('tenant_id', $tenant->id))
             ->whereIn('id', $data['service_ids'])
+            ->where(fn ($query) => $query->whereDoesntHave('prices', fn ($prices) => $prices->withoutGlobalScopes()->where('tenant_id', $tenant->id)->where('pricing_system', 'standalone'))
+                ->orWhereHas('prices', fn ($prices) => $prices->withoutGlobalScopes()->where('tenant_id', $tenant->id)->where('pricing_system', $tenant->service_pricing_mode)->where('is_active', true)))
+            ->when($tenant->service_pricing_mode === 'standard', fn ($query) => $query->whereDoesntHave('prices', fn ($prices) => $prices->withoutGlobalScopes()->where('tenant_id', $tenant->id)->where('pricing_system', 'ghanaian')))
             ->get();
         if ($services->count() !== count($data['service_ids'])) {
             throw ValidationException::withMessages(['service_ids' => 'Choose active services.']);
         }
         $prices = ServicePrice::withoutGlobalScopes()
             ->where('tenant_id', $tenant->id)
+            ->where('pricing_system', $tenant->service_pricing_mode)
             ->where('vehicle_category_id', $category->id)
             ->where('is_active', true)
             ->whereIn('service_id', $services->modelKeys())
             ->get()->keyBy('service_id');
+        if ($tenant->service_pricing_mode === 'ghanaian' && $prices->count() !== $services->count()) {
+            throw ValidationException::withMessages(['service_ids' => 'Choose cleaning options from this company’s Ghanaian menu for the selected vehicle type.']);
+        }
         $total = 0.0;
         foreach ($services as $service) {
             $total += (float) ($prices->get($service->id)?->price ?? $service->default_price);

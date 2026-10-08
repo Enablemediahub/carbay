@@ -2,6 +2,68 @@
 
 @config 'tailwind.config.js';
 
+.carbay-camera-zoom {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    margin-top: 0.75rem;
+}
+
+.carbay-camera-zoom button {
+    flex-shrink: 0;
+    width: 2.75rem;
+    height: 2.75rem;
+    border: 1px solid #405367;
+    border-radius: 0.75rem;
+    font-size: 1.5rem;
+}
+
+.carbay-camera-zoom button:disabled { opacity: 0.4; }
+.carbay-camera-zoom label { flex-shrink: 0; font-size: 0.8rem; }
+.carbay-camera-zoom output { display: block; font-weight: 700; }
+.carbay-new-wash-job .carbay-camera-zoom input[type="range"] {
+    flex: 1;
+    min-width: 0;
+    min-height: 2.75rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    accent-color: #0096ff;
+    touch-action: pan-y;
+}
+
+/* Explicit page selectors keep contrast consistent with shared section styles. */
+.carbay-new-wash-job {
+    padding-top: 1.5rem;
+}
+
+.carbay-new-wash-job .carbay-job-breakdown {
+    background-color: #0b1722;
+    color: #f4f8fc;
+}
+
+.dark .carbay-new-wash-job .carbay-client-summary {
+    background-color: #172331;
+    color: #f4f8fc;
+}
+
+.dark .carbay-new-wash-job .carbay-payment-option {
+    border-color: #405367;
+    background-color: #172331;
+    color: #f4f8fc;
+}
+
+.dark .carbay-new-wash-job .carbay-payment-option:has(input:checked) {
+    border-color: #38a8ff;
+    background-color: #153a58;
+    color: #d8efff;
+}
+
+.dark .carbay-new-wash-job .carbay-payment-option:focus-within {
+    outline: 2px solid #38a8ff;
+    outline-offset: 2px;
+}
+
 @layer base {
     :root {
         --carbay-forest: 0, 87, 158;
@@ -1128,6 +1190,10 @@
 
         .fi-main-ctn {
             padding: 1rem 0.85rem calc(6.5rem + env(safe-area-inset-bottom));
+        }
+
+        .fi-main {
+            padding-top: 1.5rem;
         }
 
         .carbay-mobile-sticky-action {

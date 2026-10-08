@@ -3,9 +3,9 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
+    <link rel="manifest" href="{{ route('pwa.manifest', ['workspace' => 'worker'], false) }}">
     <meta name="theme-color" content="#0096FF">
-    <link rel="icon" href="{{ asset('carbay-favicon-512.png') }}" type="image/png">
+    <link rel="icon" href="{{ \App\Models\PlatformSetting::appearance()->assetUrl('icon-512') }}" type="image/png">
     <title>Your wash activity · Carbay+</title>
     <style>
         :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, sans-serif; color: #173c32; background: #f4f5ec; }
@@ -36,7 +36,12 @@
         .worker-hero-art::before { inset: 16px; }
         .worker-hero-art::after { inset: 33px; }
         .worker-hero-art svg { width: 56px; height: 56px; stroke-width: 1; }
-        .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .earnings-period { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 18px; }
+        .earnings-period select { padding: 9px 34px 9px 12px; border: 1px solid #afd9f580; border-radius: 12px; background: #123f64; color: #fff; font: inherit; cursor: pointer; }
+        .earnings-period select:focus-visible { outline: 2px solid #b9e4ff; outline-offset: 3px; }
+        .payment-split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 12px; }
+        .payment-split strong { font-size: 22px; }
         .stat { min-height: 120px; border-radius: 19px; }
         .activity { overflow: hidden; }
         .sale { display: flex; justify-content: space-between; gap: 18px; padding: 16px 19px; border-top: 1px solid #edf0eb; }
@@ -44,12 +49,12 @@
         .sale strong { display: block; margin-bottom: 5px; }
         .amount { white-space: nowrap; font-weight: 800; }
         .empty { padding: 26px 20px; color: #718078; }
-        @media (max-width: 560px) { header { padding: 14px 18px; } main { margin-top: 42px; } .stats { gap: 10px; } .stat { padding: 17px; } .stat strong { font-size: 22px; } .sale { padding: 15px; } }
+        @media (max-width: 560px) { header { padding: 14px 18px; } main { margin-top: 42px; } .stats { gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); } .payment-card { grid-column: 1 / -1; } .stat { padding: 17px; } .stat strong { font-size: 22px; } .sale { padding: 15px; } }
     </style>
 </head>
 <body>
 <header>
-    <img class="brand-logo" src="{{ asset('carbay-logo.png') }}" alt="Carbay+">
+    <img class="brand-logo" src="{{ \App\Models\PlatformSetting::appearance()->assetUrl('logo') }}" alt="Carbay+">
     <form method="post" action="{{ route('worker.logout') }}">
         @csrf
         <button class="logout" type="submit">Sign out</button>
@@ -57,12 +62,23 @@
 </header>
 <main>
     <div class="welcome">
-        <section class="worker-hero" aria-label="Your sales today">
+        <section class="worker-hero" aria-label="Your earnings" style="{{ \App\Models\PlatformSetting::appearance()->heroStyle() }}">
             <div class="worker-hero-copy">
                 <div class="eyebrow">{{ $tenant->name }} · {{ $branch->name }}</div>
                 <h1>Good work, {{ $worker->name }}.</h1>
-                <p>Sales from your washes today</p>
-                <strong>GH₵ {{ number_format((float) $todayTotal, 2) }}</strong>
+                @if ($worker->photo_url)
+                    <img src="{{ $worker->photo_url }}" alt="{{ $worker->name }}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;margin:12px 0;">
+                @endif
+                <div class="earnings-period">
+                    <label for="earnings-period">Your earnings</label>
+                    <select id="earnings-period">
+                        <option value="today" selected>Today</option>
+                        <option value="week">This week</option>
+                        <option value="month">This month</option>
+                        <option value="year">This year</option>
+                    </select>
+                </div>
+                <strong id="hero-earnings" aria-live="polite">GH₵ {{ number_format($earningPeriods['today']['earned'], 2) }}</strong>
             </div>
             <div class="worker-hero-art" aria-hidden="true">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m4-9.5a4 4 0 0 0-4-2.5c-2.2 0-4 1.3-4 3s1.8 3 4 3 4 1.3 4 3-1.8 3-4 3a4 4 0 0 1-4-2.5"/></svg>
@@ -71,15 +87,15 @@
     </div>
 
     <section class="stats" aria-label="Wallet earnings">
-        <div class="stat"><span>Earned today</span><strong>GH₵ {{ number_format($todayEarnings, 2) }}</strong></div>
-        <div class="stat"><span>Earned this week</span><strong>GH₵ {{ number_format($weekEarnings, 2) }}</strong></div>
-        <div class="stat"><span>Earned this month</span><strong>GH₵ {{ number_format($monthEarnings, 2) }}</strong></div>
+        <div class="stat payment-card">
+            <div class="payment-split">
+                <div><span>Paid from today's earnings</span><strong>GH₵ {{ number_format($todaySettlement['paid'], 2) }}</strong></div>
+                <div><span>Still owed for today</span><strong>GH₵ {{ number_format($todaySettlement['owed'], 2) }}</strong></div>
+            </div>
+            <span>{{ $todaySettlement['earned'] > 0 && $todaySettlement['owed'] == 0 ? 'Fully paid for today' : 'From completed, paid jobs' }}</span>
+        </div>
         <div class="stat"><span>Available wallet</span><strong>GH₵ {{ number_format((float) ($wallet?->available_balance ?? 0), 2) }}</strong><span>Pending GH₵ {{ number_format((float) ($wallet?->pending_balance ?? 0), 2) }}</span></div>
-    </section>
-    <section class="stats" aria-label="Wash count">
-        <div class="stat"><span>Cars washed today</span><strong>{{ $todayCount }}</strong></div>
-        <div class="stat"><span>Cars washed this week</span><strong>{{ $weekCount }}</strong></div>
-        <div class="stat"><span>Cars washed this month</span><strong>{{ $monthCount }}</strong></div>
+        <div class="stat"><span id="cars-period-label">Cars washed today</span><strong id="cars-period-count" aria-live="polite">{{ $earningPeriods['today']['cars'] }}</strong></div>
     </section>
 
     @if (session('status'))
@@ -115,7 +131,8 @@
         @forelse ($recentJobs as $job)
             <article class="sale">
                 <div>
-                    <strong>{{ $job->plate }} · {{ ucfirst($job->status) }}</strong>
+                    <strong>{{ $job->plate ?: 'Standalone cleaning' }} · {{ ucfirst($job->status) }}</strong>
+                    <span class="muted">Company-set worker pool: {{ $job->services->map(fn ($item) => $item->service_name.' '.number_format((float) $item->worker_pct, 0).'%')->join(', ') }}. Shared equally by the assigned team.</span>
                     <span class="muted">{{ $job->created_at->format('D, j M · g:i a') }} · {{ $job->services->pluck('service_name')->join(', ') }}</span>
                 </div>
                 <div class="amount">GH₵ {{ number_format((float) $job->pivot->share_amount, 2) }}</div>
@@ -139,11 +156,23 @@
             <div class="empty">No completed washes have been assigned to you yet.</div>
         @endforelse
     </section>
+    @include('shared.developer-footer')
 </main>
 <script>
+    const earningPeriods = @json($earningPeriods);
+    const periodLabels = { today: 'today', week: 'this week', month: 'this month', year: 'this year' };
+    document.getElementById('earnings-period').addEventListener('change', (event) => {
+        const period = event.target.value;
+        const totals = earningPeriods[period];
+        if (!totals) return;
+        document.getElementById('hero-earnings').textContent = 'GH₵ ' + Number(totals.earned).toLocaleString('en-GH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('cars-period-label').textContent = 'Cars washed ' + periodLabels[period];
+        document.getElementById('cars-period-count').textContent = totals.cars;
+    });
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => navigator.serviceWorker.register('{{ asset('service-worker.js') }}'));
     }
 </script>
+@include('shared.subscription-popup', ['role' => 'worker'])
 </body>
 </html>

@@ -1,18 +1,26 @@
 @php
     $user = auth()->user();
     $firstName = $user?->role === 'super_admin'
-        ? 'Admin'
+        ? 'Superadmin'
         : (filled($user?->name) ? str($user->name)->explode(' ')->first() : 'there');
     $greeting = now()->hour < 12 ? 'Good morning' : (now()->hour < 17 ? 'Good afternoon' : 'Good evening');
 @endphp
 
-<section class="carbay-dashboard-hero carbay-dashboard-hero-superadmin" aria-label="Platform overview">
+<section class="carbay-dashboard-hero carbay-dashboard-hero-superadmin" aria-label="Platform overview" style="{{ \App\Models\PlatformSetting::appearance()->heroStyle() }}">
     <div class="carbay-dashboard-hero-copy">
         <span class="carbay-dashboard-eyebrow">{{ now()->format('l, j F') }} · CARBAY+ OPERATIONS</span>
         <h2>{{ $greeting }}, {{ $firstName }}!</h2>
         <p>Sales across all wash businesses today</p>
         <strong class="carbay-dashboard-sales">{{ \App\Support\Currency::format($todaySales) }}</strong>
         <div class="carbay-dashboard-actions">
+            <a class="carbay-dashboard-secondary-action" href="{{ \App\Filament\Superadmin\Pages\LandingAppearance::getUrl(panel: 'superadmin') }}">
+                <x-filament::icon icon="heroicon-o-cog-6-tooth" />
+                <span>Settings</span>
+            </a>
+            <a class="carbay-dashboard-secondary-action" href="{{ \App\Filament\Superadmin\Pages\CompanyOverview::getUrl(panel: 'superadmin') }}">
+                <x-filament::icon icon="heroicon-o-chart-bar-square" />
+                <span>Company finances</span>
+            </a>
             <a class="carbay-dashboard-primary-action" href="{{ \App\Filament\Superadmin\Resources\TenantResource::getUrl(panel: 'superadmin') }}">
                 <x-filament::icon icon="heroicon-o-building-office-2" />
                 <span>Manage tenants</span>

@@ -12,7 +12,7 @@ class ServicePrice extends Model
 
     protected $fillable = [
         'tenant_id', 'service_id', 'vehicle_category_id',
-        'price', 'company_pct', 'worker_pct', 'is_active',
+        'price', 'company_pct', 'worker_pct', 'is_active', 'pricing_system',
     ];
 
     protected function casts(): array

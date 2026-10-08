@@ -1,1 +1,1 @@
-<img class="carbay-brand-logo" src="{{ asset('carbay-logo-dark.png') }}" alt="Carbay+">
+<img class="carbay-brand-logo" src="{{ \App\Models\PlatformSetting::appearance()->assetUrl('dark-logo') }}" alt="Carbay+">

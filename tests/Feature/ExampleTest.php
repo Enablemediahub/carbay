@@ -21,6 +21,11 @@ class ExampleTest extends TestCase
             ->assertSee('Worker')
             ->assertSee('Manager')
             ->assertSee('Admin / CEO')
+            ->assertSee('Designed and Developed by')
+            ->assertSee('DALE QUIST')
+            ->assertSee('[Enabl Technologies]')
+            ->assertSee('href="'.url('/superadmin/login').'"', false)
+            ->assertSee('href="'.route('manager.login').'"', false)
             ->assertSee('href="'.route('worker.login').'"', false)
             ->assertSee('href="'.url('/app/login').'"', false);
 
@@ -74,7 +79,9 @@ class ExampleTest extends TestCase
             ->assertSee('Monthly recurring revenue')
             ->assertSee('Active users')
             ->assertSee('Manage tenants')
-            ->assertSee('Billing');
+            ->assertSee('Billing')
+            ->assertSee('Superadmin!')
+            ->assertSee('DALE QUIST');
     }
 
     public function test_global_reference_resources_are_available_to_super_admin(): void

@@ -60,17 +60,18 @@ class WashSaleRecorder
             throw ValidationException::withMessages(['items' => 'Add at least one service to the sale.']);
         }
 
-        return DB::transaction(function () use ($attributes, $items, $user, $tenant, $branch, $paymentMethod): WashSale {
+        return DB::transaction(function () use ($attributes, $items, $tenant, $branch, $paymentMethod): WashSale {
             $total = 0;
             $pricedItems = [];
 
             foreach ($items as $item) {
                 $price = ServicePrice::query()
                     ->with(['service', 'vehicleCategory'])
+                    ->whereIn('pricing_system', [$tenant->service_pricing_mode, 'standalone'])
                     ->where('is_active', true)
                     ->find($item['service_price_id'] ?? null);
 
-                if (! $price || ! $price->service?->is_global || ! $price->service->is_active) {
+                if (! $price || ! $price->service || ! $price->service->is_active || (! $price->service->is_global && $price->service->tenant_id !== $tenant->id)) {
                     throw ValidationException::withMessages([
                         'items' => 'Choose an active service and vehicle category offered by your company.',
                     ]);
@@ -92,7 +93,7 @@ class WashSaleRecorder
                 $total += $lineTotal;
                 $pricedItems[] = [
                     'service_id' => $price->service_id,
-                    'service_name' => $price->service->name.' ('.$price->vehicleCategory->name.')',
+                    'service_name' => $price->service->name.' ('.($price->vehicleCategory?->name ?? 'Standalone cleaning').')',
                     'quantity' => $quantity,
                     'unit_price' => $price->price,
                     'total_amount' => $lineTotal,

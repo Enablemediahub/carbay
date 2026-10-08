@@ -17,7 +17,7 @@ class Job extends Model implements BranchScoped
         'tenant_id', 'branch_id', 'manager_id', 'client_id', 'plate',
         'vehicle_category_id', 'make_id', 'model_id', 'total_amount', 'discount_amount',
         'payment_method', 'payment_ref', 'payment_status', 'status',
-        'notes', 'photo_path',
+        'notes', 'photo_path', 'job_type',
     ];
 
     protected function casts(): array

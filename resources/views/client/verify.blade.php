@@ -18,5 +18,6 @@
         @error('code')<p class="error">{{ $message }}</p>@enderror
         <button type="submit">Verify and continue</button>
     </form>
+    @include('shared.developer-footer')
 </main></body>
 </html>

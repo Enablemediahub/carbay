@@ -25,5 +25,6 @@
         <button type="submit">Send verification code</button>
     </form>
     <p class="muted">Already registered? <a href="{{ route('client.login', ['tenant' => $tenant->id]) }}">Sign in</a></p>
+    @include('shared.developer-footer')
 </main></body>
 </html>

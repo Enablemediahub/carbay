@@ -4,8 +4,12 @@ namespace App\Filament\App\Resources;
 
 use App\Filament\App\Resources\WorkerResource\Pages;
 use App\Models\Worker;
+use App\Rules\UniqueStaffPhone;
+use App\Support\PhoneNumber;
+use App\Support\StaffPhoto;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\ViewField;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -35,7 +39,11 @@ class WorkerResource extends Resource
                 ->preload()
                 ->required(),
             TextInput::make('name')->required()->maxLength(255),
-            TextInput::make('phone')->tel()->maxLength(30),
+            ViewField::make('photo_path')->label('Worker photo')->view('filament.forms.staff-photo')
+                ->rules(fn (?Worker $record): array => StaffPhoto::rules($record))->columnSpanFull(),
+            TextInput::make('phone')->tel()->maxLength(30)
+                ->mutateStateForValidationUsing(fn (?string $state): ?string => PhoneNumber::normalize($state))
+                ->rules(fn (?Worker $record): array => ['nullable', 'regex:/^\+?[0-9]{7,15}$/', new UniqueStaffPhone($record)]),
             TextInput::make('pin')->password()->revealable()
                 ->required(fn (string $operation): bool => $operation === 'create')
                 ->rules(['digits_between:4,12'])
@@ -45,7 +53,6 @@ class WorkerResource extends Resource
                 'permanent' => 'Permanent',
                 'casual' => 'Casual',
             ])->required()->default('permanent'),
-            TextInput::make('default_share_pct')->numeric()->suffix('%')->minValue(0)->maxValue(100)->required(),
             Select::make('payout_mode')->options([
                 'instant' => 'Instant',
                 'daily' => 'Daily',
@@ -66,7 +73,6 @@ class WorkerResource extends Resource
             TextColumn::make('phone')->searchable(),
             TextColumn::make('branch.name')->label('Branch')->sortable(),
             TextColumn::make('type')->badge(),
-            TextColumn::make('default_share_pct')->suffix('%'),
             TextColumn::make('status')->badge(),
         ])->actions([
             Tables\Actions\EditAction::make(),

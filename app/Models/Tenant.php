@@ -25,7 +25,7 @@ class Tenant extends Model
         'grace_period_ends_at', 'paystack_transfers_enabled',
         'cash_enabled', 'momo_enabled', 'paystack_enabled',
         'loyalty_points_per_10', 'loyalty_reward_points', 'loyalty_reward_value',
-        'fraud_discount_threshold_pct',
+        'fraud_discount_threshold_pct', 'service_pricing_mode',
     ];
 
     protected $hidden = ['paystack_secret_key'];

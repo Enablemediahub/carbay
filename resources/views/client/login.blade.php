@@ -23,5 +23,6 @@
         <button type="submit">Send sign-in code</button>
     </form>
     <p class="muted">New here? <a href="{{ route('client.register', ['tenant' => $tenant->id]) }}">Create an account</a></p>
+    @include('shared.developer-footer')
 </main></body>
 </html>

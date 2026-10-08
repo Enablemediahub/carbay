@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\Tenant;
 use App\Models\Worker;
+use App\Support\SubscriptionAccess;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -24,7 +25,7 @@ class AuthenticateWorkerPortal
             ->where('status', 'active')
             ->first();
         $tenant = $worker
-            ? Tenant::withoutGlobalScopes()->whereKey($worker->tenant_id)->where('status', 'active')->first()
+            ? Tenant::withoutGlobalScopes()->whereKey($worker->tenant_id)->first()
             : null;
 
         if (! $worker || ! $tenant?->hasFeature('worker_pin_login')) {
@@ -36,6 +37,11 @@ class AuthenticateWorkerPortal
         }
 
         Auth::guard('worker')->setUser($worker);
+
+        if (! app(SubscriptionAccess::class)->state($tenant)['allowed']
+            && ! $request->routeIs('worker.subscription.notice', 'worker.logout')) {
+            return redirect()->route('worker.subscription.notice');
+        }
 
         return $next($request);
     }

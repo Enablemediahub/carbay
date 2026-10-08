@@ -34,4 +34,7 @@
         <span>Made for the people behind the clean.</span>
         <span class="carbay-footer-plus">CARBAY<span>+</span></span>
     </div>
+    @unless ($isSuperAdmin)
+        <a href="{{ route('manager.login') }}" style="display: block; margin-top: 12px; color: inherit; text-decoration: underline;">Manager phone &amp; PIN sign in</a>
+    @endunless
 </aside>

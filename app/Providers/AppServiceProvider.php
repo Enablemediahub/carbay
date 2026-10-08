@@ -18,6 +18,7 @@ use App\Observers\AuditTrailObserver;
 use App\Observers\CashReconciliationObserver;
 use App\Observers\JobObserver;
 use App\Observers\PayoutObserver;
+use App\Support\PhoneNumber;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -61,9 +62,19 @@ class AppServiceProvider extends ServiceProvider
         CashReconciliation::observe(CashReconciliationObserver::class);
         Payout::observe(PayoutObserver::class);
 
+        RateLimiter::for('manager-pin', function (Request $request): array {
+            $identity = (string) $request->input('company_id').'|'
+                .preg_replace('/\D+/', '', PhoneNumber::normalize((string) $request->input('phone')) ?? '');
+
+            return [
+                Limit::perMinute(5)->by('manager-identity:'.$identity),
+                Limit::perMinute(30)->by('manager-ip:'.$request->ip()),
+            ];
+        });
+
         RateLimiter::for('worker-pin', function (Request $request): array {
             $identity = (string) $request->input('company_id').'|'
-                .preg_replace('/\D+/', '', (string) $request->input('phone'));
+                .preg_replace('/\D+/', '', PhoneNumber::normalize((string) $request->input('phone')) ?? '');
 
             return [
                 Limit::perMinute(5)->by('worker-identity:'.$identity),

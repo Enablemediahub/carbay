@@ -1,29 +1,35 @@
 import { createWorker, PSM } from 'tesseract.js';
-
-const platePattern = /^(?:[A-Z]{2}\s?\d{3,4}\s?[A-Z]?|[A-Z]{2}\s?\d{4}-\d{2}|[A-Z]{2}\s?\d{4}\s?[A-Z])$/;
-const compactPlatePattern = /^([A-Z]{2})(\d{3,4})([A-Z]?)$|^([A-Z]{2})(\d{4})(\d{2})$|^([A-Z]{2})(\d{4})([A-Z])$/;
+import { cameraCrop, normalizePlate } from './plate-recognition';
+import { createCameraZoom } from './camera-zoom';
 const activeScanners = new WeakMap();
 const runningScanners = new Set();
 
-function normalizePlate(text) {
-    const compact = text.toUpperCase().replace(/[^A-Z0-9]/g, '');
-    const match = compact.match(compactPlatePattern);
+function dataStatus(text) {
+    const lastRead = (text || '').trim().replace(/\s+/g, ' ').slice(0, 60);
+    return lastRead
+        ? `Read: ${lastRead}. Adjust the zoom and hold the plate steady inside the guide.`
+        : 'Scanning live… Zoom in until the plate fills the guide and hold steady.';
+}
 
-    if (! match) {
-        return null;
-    }
+function updateZoomControls(scanner, zoom) {
+    const slider = scanner.modal.querySelector('[data-camera-zoom]');
+    slider.min = zoom.min;
+    slider.max = zoom.max;
+    slider.step = zoom.step;
+    slider.value = zoom.value;
+    slider.setAttribute('aria-valuetext', `${zoom.value.toFixed(1)} times zoom`);
+    scanner.modal.querySelector('[data-camera-zoom-value]').textContent = `${zoom.value.toFixed(1)}×`;
+    scanner.modal.querySelector('[data-camera-zoom-out]').disabled = zoom.value <= zoom.min;
+    scanner.modal.querySelector('[data-camera-zoom-in]').disabled = zoom.value >= zoom.max;
+    scanner.zoomVersion++;
+    scanner.matches = 0;
+    scanner.lastCandidate = null;
+}
 
-    let plate;
-
-    if (match[1]) {
-        plate = `${match[1]} ${match[2]}${match[3]}`;
-    } else if (match[4]) {
-        plate = `${match[4]} ${match[5]}-${match[6]}`;
-    } else {
-        plate = `${match[7]} ${match[8]}${match[9]}`;
-    }
-
-    return platePattern.test(plate) ? plate : null;
+function setZoom(scanner, value) {
+    if (! scanner?.zoom || ! scanner.scanning) return;
+    scanner.zoomVersion++;
+    void scanner.zoom.set(value);
 }
 
 function showError(container, message) {
@@ -63,21 +69,30 @@ async function stopCamera(scanner) {
 
 async function scanFrames(scanner) {
     const context = scanner.canvas.getContext('2d', { willReadFrequently: true });
+    let attempt = 0;
 
-    while (scanner.scanning && scanner.worker && scanner.video.videoWidth > 0) {
-        scanner.canvas.width = 1000;
-        scanner.canvas.height = 260;
-        const sourceWidth = scanner.video.videoWidth * 0.9;
-        const sourceHeight = scanner.video.videoHeight * 0.36;
-        const sourceX = (scanner.video.videoWidth - sourceWidth) / 2;
-        const sourceY = (scanner.video.videoHeight - sourceHeight) / 2;
+    while (scanner.scanning && scanner.worker) {
+        if (! scanner.video.videoWidth || scanner.video.readyState < 2) {
+            scanner.status.textContent = 'Waiting for camera frames…';
+            await new Promise((resolve) => window.setTimeout(resolve, 200));
+            continue;
+        }
+        const crop = cameraCrop(
+            scanner.video.videoWidth, scanner.video.videoHeight,
+            scanner.video.getBoundingClientRect(),
+            scanner.container.querySelector('.carbay-plate-camera-guide').getBoundingClientRect(),
+        );
+        const frameZoomVersion = scanner.zoomVersion;
+        // Keep the plate's proportions on portrait phones as well as landscape cameras.
+        scanner.canvas.width = 1400;
+        scanner.canvas.height = Math.max(1, Math.round(1400 * crop.height / crop.width));
 
         context.drawImage(
             scanner.video,
-            sourceX,
-            sourceY,
-            sourceWidth,
-            sourceHeight,
+            crop.x,
+            crop.y,
+            crop.width,
+            crop.height,
             0,
             0,
             scanner.canvas.width,
@@ -85,10 +100,30 @@ async function scanFrames(scanner) {
         );
 
         try {
+            // Try both the original frame and a contrast-enhanced frame.
+            if (attempt % 2) {
+                const pixels = context.getImageData(0, 0, scanner.canvas.width, scanner.canvas.height);
+                for (let i = 0; i < pixels.data.length; i += 4) {
+                    const grey = pixels.data[i] * 0.299 + pixels.data[i + 1] * 0.587 + pixels.data[i + 2] * 0.114;
+                    const value = Math.max(0, Math.min(255, (grey - 128) * 1.6 + 128));
+                    pixels.data[i] = pixels.data[i + 1] = pixels.data[i + 2] = value;
+                }
+                context.putImageData(pixels, 0, 0);
+            }
+            await scanner.worker.setParameters({
+                tessedit_pageseg_mode: attempt % 2 ? PSM.SINGLE_LINE : PSM.SPARSE_TEXT,
+            });
             const { data } = await scanner.worker.recognize(scanner.canvas);
+            if (! scanner.scanning) return;
+            if (frameZoomVersion !== scanner.zoomVersion) continue;
+            scanner.lastText = data.text;
             const plate = normalizePlate(data.text);
+            scanner.matches = plate && plate === scanner.lastCandidate ? (scanner.matches || 0) + 1 : (plate ? 1 : 0);
+            scanner.lastCandidate = plate;
 
-            if (plate && data.confidence >= 30) {
+            // Whitelisted plate text can have a low overall OCR confidence even
+            // when correct. Repeated readings can fill it for human confirmation.
+            if (plate && (data.confidence >= 70 || scanner.matches >= 2)) {
                 scanner.scanning = false;
                 scanner.status.textContent = 'Plate found. Checking it now…';
                 const confidence = Math.max(0, Math.min(1, data.confidence / 100));
@@ -101,6 +136,7 @@ async function scanFrames(scanner) {
                 return;
             }
         } catch (error) {
+            if (! scanner.scanning) return;
             scanner.scanning = false;
             await stopCamera(scanner);
             showError(scanner.container, 'The camera frame could not be read. Adjust the plate and try again.');
@@ -109,13 +145,15 @@ async function scanFrames(scanner) {
             return;
         }
 
-        scanner.status.textContent = 'Scanning live… Keep the plate inside the guide and hold steady.';
+        scanner.status.textContent = dataStatus(scanner.lastText);
+        attempt++;
         await new Promise((resolve) => window.setTimeout(resolve, 1200));
     }
 }
 
 async function startCamera(button) {
     const container = button.closest('.carbay-new-wash-job');
+    if (activeScanners.get(container)?.scanning) return;
     const scanner = {
         container,
         startButton: button,
@@ -124,7 +162,8 @@ async function startCamera(button) {
         status: container.querySelector('[data-camera-status]'),
         stream: null,
         worker: null,
-        scanning: false,
+        scanning: true,
+        zoomVersion: 0,
         canvas: document.createElement('canvas'),
     };
     activeScanners.set(container, scanner);
@@ -132,6 +171,7 @@ async function startCamera(button) {
     container.querySelector('[data-camera-error]').hidden = true;
 
     if (! navigator.mediaDevices?.getUserMedia) {
+        scanner.scanning = false;
         showError(container, 'Live camera scanning requires HTTPS and a browser that supports camera access.');
 
         return;
@@ -142,7 +182,7 @@ async function startCamera(button) {
     button.textContent = 'Starting camera…';
 
     try {
-        scanner.stream = await navigator.mediaDevices.getUserMedia({
+        const stream = await navigator.mediaDevices.getUserMedia({
             audio: false,
             video: {
                 facingMode: { ideal: 'environment' },
@@ -150,12 +190,18 @@ async function startCamera(button) {
                 height: { ideal: 720 },
             },
         });
+        if (! scanner.scanning) {
+            stream.getTracks().forEach((track) => track.stop());
+            return;
+        }
+        scanner.stream = stream;
         scanner.video.srcObject = scanner.stream;
         scanner.modal.hidden = false;
         await scanner.video.play();
+        scanner.zoom = createCameraZoom(scanner.video, stream.getVideoTracks()[0], (zoom) => updateZoomControls(scanner, zoom));
         scanner.status.textContent = 'Loading the on-device plate reader…';
 
-        scanner.worker = await createWorker('eng', 1, {
+        const worker = await createWorker('eng', 1, {
             workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/worker.min.js',
             corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@7.0.0',
             langPath: 'https://tessdata.projectnaptha.com/4.0.0',
@@ -169,16 +215,22 @@ async function startCamera(button) {
                 }
             },
         });
+        if (! scanner.scanning) {
+            await worker.terminate();
+            return;
+        }
+        scanner.worker = worker;
         await scanner.worker.setParameters({
-            tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+            tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-',
             tessedit_pageseg_mode: PSM.SINGLE_LINE,
-            preserve_interword_spaces: '0',
+            preserve_interword_spaces: '1',
         });
 
+        if (! scanner.scanning) return;
         scanner.status.textContent = 'Center the plate inside the guide. Recognition stays on this device.';
-        scanner.scanning = true;
         await scanFrames(scanner);
     } catch (error) {
+        if (! scanner.scanning) return;
         await stopCamera(scanner);
         showError(
             container,
@@ -214,10 +266,29 @@ document.addEventListener('click', (event) => {
             void stopCamera(scanner);
         }
     }
+
+    const zoomButton = event.target.closest('[data-camera-zoom-in], [data-camera-zoom-out]');
+    if (zoomButton && ! zoomButton.disabled) {
+        const scanner = activeScanners.get(zoomButton.closest('.carbay-new-wash-job'));
+        if (scanner?.zoom) {
+            const direction = zoomButton.hasAttribute('data-camera-zoom-in') ? 1 : -1;
+            setZoom(scanner, scanner.zoom.value + direction * Math.max(scanner.zoom.step, 0.5));
+        }
+    }
+});
+
+document.addEventListener('input', (event) => {
+    if (event.target instanceof Element && event.target.matches('[data-camera-zoom]')) {
+        setZoom(activeScanners.get(event.target.closest('.carbay-new-wash-job')), event.target.value);
+    }
 });
 
 document.addEventListener('livewire:navigating', () => {
     runningScanners.forEach((scanner) => {
         void stopCamera(scanner);
     });
+});
+
+window.addEventListener('pagehide', () => {
+    runningScanners.forEach((scanner) => void stopCamera(scanner));
 });

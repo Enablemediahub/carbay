@@ -4,7 +4,9 @@ namespace App\Models;
 
 use App\Models\Concerns\BelongsToTenant;
 use App\Models\Concerns\BranchScoped;
+use App\Models\Concerns\HasUniqueStaffPhone;
 use Filament\Models\Contracts\FilamentUser;
+use Filament\Models\Contracts\HasAvatar;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,9 +14,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable implements BranchScoped, FilamentUser
+class User extends Authenticatable implements BranchScoped, FilamentUser, HasAvatar
 {
-    use BelongsToTenant, HasFactory, Notifiable;
+    use BelongsToTenant, HasFactory, HasUniqueStaffPhone, Notifiable;
 
     protected $fillable = [
         'tenant_id',
@@ -26,6 +28,7 @@ class User extends Authenticatable implements BranchScoped, FilamentUser
         'password',
         'pin',
         'status',
+        'photo_path',
     ];
 
     protected $hidden = [
@@ -46,6 +49,16 @@ class User extends Authenticatable implements BranchScoped, FilamentUser
     public function isSuperAdmin(): bool
     {
         return $this->role === 'super_admin';
+    }
+
+    public function getPhotoUrlAttribute(): ?string
+    {
+        return $this->photo_path ? route('staff.photo', ['type' => 'manager', 'id' => $this->id], false) : null;
+    }
+
+    public function getFilamentAvatarUrl(): ?string
+    {
+        return $this->photo_url;
     }
 
     public function canAccessPanel(Panel $panel): bool

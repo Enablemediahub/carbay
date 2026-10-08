@@ -32,6 +32,8 @@ class ServicePriceResource extends Resource
     {
         return $form->schema([
             Select::make('service_id')
+                ->label('Shared catalogue service')
+                ->helperText('Add this service to your company’s Standard menu, then set your company price and share percentages.')
                 ->options(fn (): array => Service::query()->global()->where('is_active', true)->orderBy('name')->pluck('name', 'id')->all())
                 ->searchable()
                 ->rules([
@@ -88,6 +90,6 @@ class ServicePriceResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->whereHas('service', fn (Builder $query) => $query->where('is_global', true));
+        return parent::getEloquentQuery()->where('pricing_system', 'standard')->whereHas('service', fn (Builder $query) => $query->where('is_global', true));
     }
 }

@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\Models\BranchAddonInvoice;
 use App\Models\Branch;
+use App\Models\BranchAddonInvoice;
 use App\Models\SubscriptionInvoice;
 use App\Models\Tenant;
 use Illuminate\Console\Command;
@@ -27,7 +27,7 @@ class ProcessSubscriptionBilling extends Command
         return self::SUCCESS;
     }
 
-    private function processTenant(int $tenantId): void
+    public function processTenant(int $tenantId): void
     {
         DB::transaction(function () use ($tenantId): void {
             $tenant = Tenant::withoutGlobalScopes()->lockForUpdate()->find($tenantId);

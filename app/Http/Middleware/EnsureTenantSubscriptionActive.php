@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\Branch;
 use App\Models\Tenant;
+use App\Support\SubscriptionAccess;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -20,10 +21,9 @@ class EnsureTenantSubscriptionActive
         $tenant = Tenant::withoutGlobalScopes()->find($user->tenant_id);
         abort_unless($tenant, 403, 'Company account not found.');
 
-        $inTrial = $tenant->status === 'trial'
-            && ($tenant->trial_ends_at === null || $tenant->trial_ends_at->isFuture());
+        $state = app(SubscriptionAccess::class)->state($tenant);
         if (
-            $tenant->status === 'active'
+            $state['allowed']
             && $user->role === 'manager'
             && ! Branch::withoutGlobalScopes()
                 ->where('tenant_id', $tenant->id)
@@ -31,9 +31,9 @@ class EnsureTenantSubscriptionActive
                 ->where('status', 'active')
                 ->exists()
         ) {
-            abort(402, 'This branch is inactive. Contact the company owner about its add-on invoice.');
+            return response()->view('shared.branch-notice', [], 402);
         }
-        if ($tenant->status === 'active' || $inTrial) {
+        if ($state['allowed']) {
             return $next($request);
         }
 
@@ -46,6 +46,6 @@ class EnsureTenantSubscriptionActive
                 ->with('warning', 'Your subscription needs attention. Review your invoices to restore full access.');
         }
 
-        abort(402, 'Your company subscription is inactive. Ask the company owner to review billing.');
+        return redirect()->route('subscription.notice');
     }
 }

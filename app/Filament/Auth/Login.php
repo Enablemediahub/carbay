@@ -2,6 +2,7 @@
 
 namespace App\Filament\Auth;
 
+use App\Support\PhoneNumber;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Component;
 use Filament\Forms\Components\TextInput;
@@ -39,8 +40,15 @@ class Login extends BaseLogin
     {
         $identifier = trim((string) $data['email']);
 
+        if (! str_contains($identifier, '@')) {
+            return [
+                'phone' => fn ($query) => PhoneNumber::match($query, $identifier),
+                'password' => $data['password'],
+            ];
+        }
+
         return [
-            str_contains($identifier, '@') ? 'email' : 'phone' => $identifier,
+            'email' => $identifier,
             'password' => $data['password'],
         ];
     }

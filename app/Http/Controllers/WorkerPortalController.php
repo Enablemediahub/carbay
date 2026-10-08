@@ -9,11 +9,11 @@ use App\Models\Scopes\TenantScope;
 use App\Models\Tenant;
 use App\Models\WashSale;
 use App\Models\Worker;
-use App\Support\DashboardSales;
 use App\Services\WalletService;
+use App\Support\PhoneNumber;
+use App\Support\WorkerSettlement;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
@@ -36,7 +36,6 @@ class WorkerPortalController extends Controller
 
         if ($feature) {
             $companies = Tenant::withoutGlobalScopes()
-                ->where('status', 'active')
                 ->with([
                     'tenantFeatures' => fn ($query) => $query
                         ->withoutGlobalScopes()
@@ -70,15 +69,14 @@ class WorkerPortalController extends Controller
 
         $tenant = Tenant::withoutGlobalScopes()
             ->whereKey($data['company_id'])
-            ->where('status', 'active')
             ->first();
 
+        $data['phone'] = PhoneNumber::normalize($data['phone']);
+
         $worker = $tenant && $tenant->hasFeature('worker_pin_login')
-            ? Worker::withoutGlobalScopes()
+            ? PhoneNumber::match(Worker::withoutGlobalScopes()
                 ->where('tenant_id', $tenant->id)
-                ->where('phone', $data['phone'])
-                ->where('status', 'active')
-                ->first()
+                ->where('status', 'active'), $data['phone'] ?? '')->first()
             : null;
 
         if (! $worker || ! $worker->pin || ! Hash::check($data['pin'], $worker->pin)) {
@@ -94,26 +92,23 @@ class WorkerPortalController extends Controller
         return redirect()->route('worker.dashboard');
     }
 
-    public function dashboard(Request $request, DashboardSales $dashboardSales): View
+    public function dashboard(Request $request): View
     {
         /** @var Worker $worker */
         $worker = Auth::guard('worker')->user();
         $salesQuery = WashSale::withoutGlobalScope(TenantScope::class)
             ->where('tenant_id', $worker->tenant_id)
             ->where('worker_id', $worker->id);
-        $todaySales = (clone $salesQuery)
-            ->where('status', 'completed')
-            ->whereDate('sold_at', today());
         $jobQuery = $worker->jobs()->with('services');
-        $todayJobs = (clone $jobQuery)
-            ->where('jobs.status', 'completed')
-            ->whereDate('jobs.created_at', today());
-        $weekSales = (clone $salesQuery)
-            ->where('status', 'completed')
-            ->whereBetween('sold_at', [now()->startOfWeek(), now()->endOfWeek()]);
-        $monthSales = (clone $salesQuery)
-            ->where('status', 'completed')
-            ->whereBetween('sold_at', [now()->startOfMonth(), now()->endOfMonth()]);
+        $todaySettlement = app(WorkerSettlement::class)->today($worker);
+        $periods = [];
+        foreach (['today' => today(), 'week' => now()->startOfWeek(), 'month' => now()->startOfMonth(), 'year' => now()->startOfYear()] as $period => $start) {
+            $periods[$period] = [
+                'earned' => app(WorkerSettlement::class)->earnedBetween($worker, $start, now()),
+                'cars' => (clone $jobQuery)->where('jobs.status', 'completed')->where('jobs.payment_status', 'paid')
+                    ->where('jobs.job_type', 'vehicle')->whereBetween('jobs.created_at', [$start, now()])->count(),
+            ];
+        }
 
         return view('worker.dashboard', [
             'worker' => $worker,
@@ -121,12 +116,7 @@ class WorkerPortalController extends Controller
             'branch' => Branch::withoutGlobalScopes()
                 ->where('tenant_id', $worker->tenant_id)
                 ->findOrFail($worker->branch_id),
-            'todayTotal' => $dashboardSales->workerToday($worker),
-            'todayCount' => (clone $todaySales)->count() + (clone $todayJobs)->count(),
-            'weekCount' => (clone $jobQuery)->where('jobs.status', 'completed')->whereBetween('jobs.created_at', [now()->startOfWeek(), now()->endOfWeek()])->count()
-                + $weekSales->count(),
-            'monthCount' => (clone $jobQuery)->where('jobs.status', 'completed')->whereBetween('jobs.created_at', [now()->startOfMonth(), now()->endOfMonth()])->count()
-                + $monthSales->count(),
+            'earningPeriods' => $periods,
             'recentJobs' => (clone $jobQuery)->latest('jobs.created_at')->limit(20)->get(),
             'recentSales' => (clone $salesQuery)
                 ->with(['items' => fn ($query) => $query->withoutGlobalScope(SaleTenantScope::class)])
@@ -135,9 +125,7 @@ class WorkerPortalController extends Controller
                 ->limit(20)
                 ->get(),
             'wallet' => $worker->wallet()->withoutGlobalScopes()->first(),
-            'todayEarnings' => $this->earnings($worker, today()->startOfDay(), now()),
-            'weekEarnings' => $this->earnings($worker, now()->startOfWeek(), now()),
-            'monthEarnings' => $this->earnings($worker, now()->startOfMonth(), now()),
+            'todaySettlement' => $todaySettlement,
             'walletHistory' => $worker->wallet?->transactions()->withoutGlobalScopes()->latest()->limit(20)->get() ?? collect(),
         ]);
     }
@@ -167,14 +155,6 @@ class WorkerPortalController extends Controller
 
     private function identityKey(int $companyId, string $phone): string
     {
-        return 'worker-identity:'.$companyId.'|'.preg_replace('/\D+/', '', $phone);
-    }
-
-    private function earnings(Worker $worker, Carbon $from, Carbon $to): float
-    {
-        return (float) $worker->wallet?->transactions()->withoutGlobalScopes()
-            ->where('type', 'credit')
-            ->whereBetween('created_at', [$from, $to])
-            ->sum('amount');
+        return 'worker-identity:'.$companyId.'|'.preg_replace('/\D+/', '', PhoneNumber::normalize($phone) ?? '');
     }
 }

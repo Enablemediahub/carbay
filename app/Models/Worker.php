@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\BelongsToTenant;
 use App\Models\Concerns\BranchScoped;
+use App\Models\Concerns\HasUniqueStaffPhone;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -14,7 +15,7 @@ use Illuminate\Validation\ValidationException;
 
 class Worker extends Authenticatable implements BranchScoped
 {
-    use BelongsToTenant, HasFactory;
+    use BelongsToTenant, HasFactory, HasUniqueStaffPhone;
 
     protected static function booted(): void
     {
@@ -37,7 +38,7 @@ class Worker extends Authenticatable implements BranchScoped
 
     protected $fillable = [
         'tenant_id', 'branch_id', 'name', 'phone', 'pin',
-        'type', 'default_share_pct', 'payout_mode', 'status',
+        'type', 'payout_mode', 'status', 'photo_path',
     ];
 
     protected $hidden = ['pin'];
@@ -46,13 +47,17 @@ class Worker extends Authenticatable implements BranchScoped
     {
         return [
             'pin' => 'hashed',
-            'default_share_pct' => 'decimal:2',
         ];
     }
 
     public function getAuthPasswordName(): string
     {
         return 'pin';
+    }
+
+    public function getPhotoUrlAttribute(): ?string
+    {
+        return $this->photo_path ? route('staff.photo', ['type' => 'worker', 'id' => $this->id], false) : null;
     }
 
     public function isSuperAdmin(): bool

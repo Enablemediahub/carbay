@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
 
 class SubscriptionInvoice extends Model
@@ -52,12 +53,17 @@ class SubscriptionInvoice extends Model
                 ->where('tenant_id', $invoice->tenant_id)
                 ->where('status', 'pending')
                 ->exists();
-            if (! $hasUnpaidInvoices) {
+            if (! $hasUnpaidInvoices && $invoice->period_ends_at?->endOfDay()->gte(now())) {
                 Tenant::withoutGlobalScopes()->whereKey($invoice->tenant_id)->update([
                     'status' => 'active',
                     'grace_period_ends_at' => null,
                 ]);
             }
         });
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(SubscriptionPayment::class)->whereIn('status', ['paid', 'review']);
     }
 }

@@ -9,10 +9,13 @@
     };
 @endphp
 
-<section class="carbay-dashboard-hero carbay-dashboard-hero-manager" aria-label="Welcome">
+<section class="carbay-dashboard-hero carbay-dashboard-hero-manager" aria-label="Welcome" style="{{ \App\Models\PlatformSetting::appearance()->heroStyle() }}">
     <div class="carbay-dashboard-hero-copy">
         <span class="carbay-dashboard-eyebrow">{{ now()->format('l, j F') }} · {{ $dashboardScope }}</span>
         <h2>{{ $greeting }}, {{ $firstName }}!</h2>
+        @if ($user?->photo_url)
+            <img src="{{ $user->photo_url }}" alt="{{ $user->name }}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;margin:12px 0;">
+        @endif
         <p>Sales collected today</p>
         <strong class="carbay-dashboard-sales">{{ \App\Support\Currency::format($todaySales) }}</strong>
         <div class="carbay-dashboard-actions">

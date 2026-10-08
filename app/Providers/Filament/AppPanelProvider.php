@@ -4,10 +4,13 @@ namespace App\Providers\Filament;
 
 use App\Filament\App\Pages\CashReconciliationPage;
 use App\Filament\App\Pages\Dashboard;
+use App\Filament\App\Pages\DataPrivacy;
+use App\Filament\App\Pages\GhanaianPricing;
 use App\Filament\App\Pages\NewWashJob;
 use App\Filament\App\Pages\PayoutApprovalPage;
 use App\Filament\App\Pages\PromoBlast;
 use App\Filament\App\Pages\Reports;
+use App\Filament\App\Pages\ServiceAgreement;
 use App\Filament\App\Pages\Subscription;
 use App\Filament\App\Pages\TenantSettings;
 use App\Filament\App\Pages\TodayJobs;
@@ -20,6 +23,7 @@ use App\Filament\App\Widgets\TopWorkers;
 use App\Filament\Auth\Login;
 use App\Http\Middleware\EnsureTenantSubscriptionActive;
 use App\Http\Middleware\RedirectSuperAdminFromTenantPanel;
+use App\Models\PlatformSetting;
 use App\Support\DashboardSales;
 use Filament\Enums\ThemeMode;
 use Filament\Facades\Filament;
@@ -49,7 +53,7 @@ class AppPanelProvider extends PanelProvider
             ->id('app')
             ->path('app')
             ->login(Login::class)
-            ->brandName('Carbay+')
+            ->brandName(fn (): string => PlatformSetting::appearance()->brand_name ?: 'Carbay+')
             ->brandLogo(fn (): View => view('filament.brand'))
             ->darkModeBrandLogo(fn (): View => view('filament.brand-dark'))
             ->brandLogoHeight('4rem')
@@ -57,6 +61,9 @@ class AppPanelProvider extends PanelProvider
             ->renderHook(PanelsRenderHook::HEAD_START, fn (): View => view('filament.pwa-head'))
             ->renderHook(PanelsRenderHook::BODY_END, fn (): View => view('filament.pwa-register'))
             ->renderHook(PanelsRenderHook::BODY_END, fn (): View => view('filament.mobile-navigation'))
+            ->renderHook(PanelsRenderHook::BODY_END, fn (): View => view('shared.subscription-popup', ['tenant' => auth()->user()?->tenant, 'role' => auth()->user()?->role]))
+            ->renderHook(PanelsRenderHook::FOOTER, fn (): View => view('shared.developer-footer'))
+            ->renderHook(PanelsRenderHook::SIMPLE_PAGE_END, fn (): View => view('shared.developer-footer'))
             ->renderHook(
                 PanelsRenderHook::PAGE_START,
                 fn (): View => view('filament.app.mobile-dashboard', [
@@ -80,8 +87,10 @@ class AppPanelProvider extends PanelProvider
             ->discoverResources(in: app_path('Filament/App/Resources'), for: 'App\\Filament\\App\\Resources')
             ->pages([Dashboard::class])
             ->pages([TenantSettings::class])
+            ->pages([GhanaianPricing::class])
             ->pages([Reports::class])
             ->pages([Subscription::class])
+            ->pages([ServiceAgreement::class, DataPrivacy::class])
             ->pages([
                 NewWashJob::class,
                 TodayJobs::class,
@@ -118,6 +127,6 @@ class AppPanelProvider extends PanelProvider
             ->authMiddleware([
                 RedirectSuperAdminFromTenantPanel::class,
                 EnsureTenantSubscriptionActive::class,
-            ]);
+            ], isPersistent: true);
     }
 }

@@ -21,8 +21,19 @@
     }
 
     if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => navigator.serviceWorker.register('{{ asset('service-worker.js') }}'));
+        window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js'));
     }
+
+    document.addEventListener('livewire:init', () => {
+        Livewire.hook('request', ({ fail }) => {
+            fail(({ status, preventDefault }) => {
+                if (status === 419) {
+                    preventDefault();
+                    window.location.reload();
+                }
+            });
+        });
+    });
 
     window.addEventListener('beforeinstallprompt', (event) => {
         event.preventDefault();
@@ -65,7 +76,7 @@
     });
 </script>
 <aside id="carbay-install-prompt" class="carbay-install-prompt" aria-label="Install Carbay+" hidden>
-    <img src="{{ asset('carbay-favicon-192.png') }}" alt="">
+    <img src="{{ \App\Models\PlatformSetting::appearance()->assetUrl('icon-192') }}" alt="">
     <div class="carbay-install-copy">
         <strong>Carbay+ works like an app</strong>
         <span class="carbay-install-android">Install it for quick, full-screen access.</span>

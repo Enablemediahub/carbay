@@ -8,12 +8,50 @@ use App\Models\Payout;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
 use App\Models\Worker;
+use App\Support\WorkerSettlement;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class WalletService
 {
+    public function payToday(Worker $worker, float $expectedAmount, string $method, string $reference, int $managerId): void
+    {
+        DB::transaction(function () use ($worker, $expectedAmount, $method, $reference, $managerId): void {
+            $wallet = Wallet::query()->where('worker_id', $worker->id)->lockForUpdate()->firstOrFail();
+            $pending = Payout::query()->where('worker_id', $worker->id)->whereIn('status', ['pending', 'queued'])->lockForUpdate()->get();
+            if ($pending->contains(fn (Payout $payout): bool => $payout->status === 'pending'
+                || data_get($payout->gateway_response_json, 'status') === 'initializing'
+                || (bool) data_get($payout->gateway_response_json, 'data.transfer_code'))) {
+                throw ValidationException::withMessages(['payout' => 'Resolve this worker\'s pending payout in Payout approvals before confirming another payment.']);
+            }
+            $summary = app(WorkerSettlement::class)->today($worker);
+            if ($summary['owed'] <= 0 || round($expectedAmount, 2) !== round($summary['owed'], 2)) {
+                throw ValidationException::withMessages(['payout' => 'The balance has changed or is already paid. Refresh the worker totals before confirming.']);
+            }
+            $wallet = $this->recalculateBalance($wallet);
+            if (round((float) $wallet->available_balance + (float) $wallet->pending_balance, 2) < round($summary['owed'], 2)) {
+                throw ValidationException::withMessages(['payout' => 'The wallet balance is lower than these earnings. Review wallet activity before confirming payment.']);
+            }
+            foreach ($summary['allocations'] as $assignmentId => $amount) {
+                $assignment = JobWorker::query()->whereKey($assignmentId)->where('worker_id', $worker->id)->firstOrFail();
+                $payout = $pending->firstWhere('job_worker_id', $assignmentId);
+                if (! $payout) {
+                    $payout = Payout::query()->create([
+                        'tenant_id' => $worker->tenant_id, 'branch_id' => $worker->branch_id,
+                        'worker_id' => $worker->id, 'job_worker_id' => $assignmentId,
+                        'amount' => $amount, 'payout_mode' => $assignment->payout_mode,
+                        'status' => 'queued', 'available_at' => now(),
+                    ]);
+                } else {
+                    // Explicit confirmation records money handed over, including early scheduled payments.
+                    $payout->update(['amount' => $amount, 'available_at' => now()]);
+                }
+                $this->settlePayout($payout, $method, $reference, $managerId);
+            }
+        }, 3);
+    }
+
     public function credit(Worker $worker, Job $job, float $amount, string $payoutMode, ?JobWorker $jobWorker = null): WalletTransaction
     {
         $this->validateAmountAndMode($amount, $payoutMode);

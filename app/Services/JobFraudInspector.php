@@ -18,7 +18,7 @@ class JobFraudInspector
 
         $this->flagJob($job, 'no_worker', ! $job->workers()->exists(), 'This job was recorded without an assigned worker.');
 
-        $duplicate = Job::withoutGlobalScopes()
+        $duplicate = filled($job->plate) && Job::withoutGlobalScopes()
             ->where('tenant_id', $job->tenant_id)
             ->whereKeyNot($job->id)
             ->whereRaw("UPPER(REPLACE(plate, ?, '')) = ?", [' ', str_replace(' ', '', strtoupper($job->plate))])

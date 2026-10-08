@@ -4,6 +4,8 @@ namespace App\Filament\Superadmin\Resources;
 
 use App\Filament\Superadmin\Resources\UserResource\Pages;
 use App\Models\User;
+use App\Rules\UniqueStaffPhone;
+use App\Support\PhoneNumber;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
@@ -33,7 +35,9 @@ class UserResource extends Resource
                 'manager' => 'Manager',
             ])->required(),
             TextInput::make('name')->required()->maxLength(255),
-            TextInput::make('phone')->tel()->maxLength(30),
+            TextInput::make('phone')->tel()->maxLength(30)
+                ->mutateStateForValidationUsing(fn (?string $state): ?string => PhoneNumber::normalize($state))
+                ->rules(fn (?User $record): array => ['nullable', 'regex:/^\+?[0-9]{7,15}$/', new UniqueStaffPhone($record)]),
             TextInput::make('email')->email()->required()->unique(ignoreRecord: true),
             TextInput::make('password')
                 ->password()

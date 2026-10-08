@@ -13,6 +13,11 @@ class Dashboard extends BaseDashboard
 {
     protected static ?string $title = 'Business overview';
 
+    public function getTitle(): string
+    {
+        return auth()->user()?->role === 'manager' ? 'Manager dashboard' : 'Admin / CEO dashboard';
+    }
+
     protected function getHeaderActions(): array
     {
         return [

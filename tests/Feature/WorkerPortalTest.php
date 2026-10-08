@@ -49,7 +49,7 @@ class WorkerPortalTest extends TestCase
         $this->get('/worker')
             ->assertOk()
             ->assertSee('Ama Worker')
-            ->assertSee('Sales from your washes today')
+            ->assertSee('Your earnings')
             ->assertSee('GH₵ 20.00')
             ->assertSee('OWN-SALE')
             ->assertDontSee('OTHER-SALE');

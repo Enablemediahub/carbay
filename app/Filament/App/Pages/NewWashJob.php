@@ -43,11 +43,22 @@ class NewWashJob extends Page
 
     public string $plate = '';
 
+    public string $jobType = 'vehicle';
+
+    public function updatedJobType(): void
+    {
+        $this->reset('plate', 'vehicleCategoryId', 'makeId', 'modelId', 'selectedServices', 'plateConfidence', 'plateConfirmed', 'localPlateScanned');
+        $this->synchronizeWorkerShares();
+        $this->resetValidation();
+    }
+
     public ?int $plateScanId = null;
 
     public float $plateConfidence = 0;
 
     public bool $plateConfirmed = false;
+
+    public bool $localPlateScanned = false;
 
     public ?string $vehicleCategoryId = null;
 
@@ -70,6 +81,8 @@ class NewWashJob extends Page
     public array $selectedServices = [];
 
     public array $selectedWorkers = [];
+
+    public ?string $workerToAdd = null;
 
     public array $workerShares = [];
 
@@ -115,10 +128,32 @@ class NewWashJob extends Page
     {
         $this->plateConfidence = 0;
         $this->plateConfirmed = false;
+        $this->localPlateScanned = false;
     }
 
     public function updatedSelectedWorkers(): void
     {
+        $this->synchronizeWorkerShares();
+    }
+
+    public function updatedWorkerToAdd(): void
+    {
+        if (! filled($this->workerToAdd)) {
+            return;
+        }
+        $worker = $this->availableWorkers()->findOrFail($this->workerToAdd);
+        $this->selectedWorkers = array_values(array_unique([
+            ...array_map('intval', $this->selectedWorkers), $worker->id,
+        ]));
+        $this->workerToAdd = null;
+        $this->synchronizeWorkerShares();
+    }
+
+    public function removeWorker(int $workerId): void
+    {
+        $this->selectedWorkers = array_values(array_filter(
+            $this->selectedWorkers, fn ($id): bool => (int) $id !== $workerId,
+        ));
         $this->synchronizeWorkerShares();
     }
 
@@ -147,6 +182,7 @@ class NewWashJob extends Page
         $this->plateScanId = null;
         $this->plateConfidence = $confidence;
         $this->plateConfirmed = $confidence >= 0.7;
+        $this->localPlateScanned = true;
     }
 
     public function addCustomCategory(): void
@@ -194,6 +230,14 @@ class NewWashJob extends Page
         $this->customModelName = '';
     }
 
+    public function selectClientMode(bool $create): void
+    {
+        $this->createClient = $create;
+        $this->clientId = null;
+        $this->clientSearch = '';
+        $this->resetValidation(['clientName', 'clientPhone', 'clientEmail', 'clientId']);
+    }
+
     public function chooseClient(int $clientId): void
     {
         $client = Client::query()->findOrFail($clientId);
@@ -206,8 +250,9 @@ class NewWashJob extends Page
     {
         $this->plate = strtoupper(trim($this->plate));
         $this->validate([
-            'plate' => ['required', 'string', 'max:20', 'regex:/^(?:[A-Z]{2}\s?\d{3,4}\s?[A-Z]?|[A-Z]{2}\s?\d{4}-\d{2}|[A-Z]{2}\s?\d{4}\s?[A-Z])$/'],
-            'vehicleCategoryId' => ['required', 'integer'],
+            'jobType' => ['required', 'in:vehicle,standalone'],
+            'plate' => $this->jobType === 'standalone' ? ['nullable'] : ['required', 'string', 'max:20', 'regex:/^(?:[A-Z]{2}\s?\d{3,4}\s?[A-Z]?|[A-Z]{2}\s?\d{4}-\d{2}|[A-Z]{2}\s?\d{4}\s?[A-Z])$/'],
+            'vehicleCategoryId' => [$this->jobType === 'standalone' ? 'nullable' : 'required', 'integer'],
             'makeId' => ['nullable', 'integer'],
             'modelId' => ['nullable', 'integer'],
             'clientId' => ['nullable', 'integer'],
@@ -224,7 +269,7 @@ class NewWashJob extends Page
             'photo' => ['nullable', 'image', 'max:10240'],
             'notes' => ['nullable', 'string', 'max:2000'],
         ]);
-        if ($this->plateConfidence > 0 && $this->plateConfidence < 0.7 && ! $this->plateConfirmed) {
+        if ($this->jobType === 'vehicle' && ($this->localPlateScanned || $this->plateConfidence > 0) && $this->plateConfidence < 0.7 && ! $this->plateConfirmed) {
             throw ValidationException::withMessages(['plate' => 'Confirm or correct this low-confidence plate scan before saving.']);
         }
 
@@ -232,9 +277,9 @@ class NewWashJob extends Page
         $tenant = Tenant::withoutGlobalScopes()->findOrFail($user->tenant_id);
         $branch = Branch::query()->whereKey($user->branch_id)->where('tenant_id', $tenant->id)->firstOrFail();
         $this->assertPaymentEnabled($tenant);
-        $category = $this->availableCategories()->findOrFail($this->vehicleCategoryId);
-        $make = $this->makeId ? $this->availableMakes()->findOrFail($this->makeId) : null;
-        $model = $this->modelId ? $this->availableModels()->findOrFail($this->modelId) : null;
+        $category = $this->jobType === 'standalone' ? null : $this->availableCategories()->findOrFail($this->vehicleCategoryId);
+        $make = $this->jobType === 'vehicle' && $this->makeId ? $this->availableMakes()->findOrFail($this->makeId) : null;
+        $model = $this->jobType === 'vehicle' && $this->modelId ? $this->availableModels()->findOrFail($this->modelId) : null;
         if ($model && (! $make || (int) $model->vehicle_make_id !== (int) $make->id)) {
             throw ValidationException::withMessages(['modelId' => 'Choose a model that belongs to the selected make.']);
         }
@@ -261,7 +306,7 @@ class NewWashJob extends Page
         if ($workers->count() !== count(array_unique(array_map('intval', $this->selectedWorkers)))) {
             throw ValidationException::withMessages(['selectedWorkers' => 'Choose only active workers assigned to this branch.']);
         }
-        $shares = $this->validatedShares($workers->pluck('id')->all(), $workerShare);
+        $shares = $this->companyWorkerShares($workers->pluck('id')->all(), $workerShare);
         $clientId = $this->clientId;
         if (! $this->createClient && $clientId && ! Client::query()->whereKey($clientId)->exists()) {
             throw ValidationException::withMessages(['clientId' => 'Choose a client belonging to this company.']);
@@ -292,8 +337,9 @@ class NewWashJob extends Page
                 'branch_id' => $branch->id,
                 'manager_id' => $user->id,
                 'client_id' => $clientId,
-                'plate' => $this->plate,
-                'vehicle_category_id' => $category->id,
+                'job_type' => $this->jobType,
+                'plate' => $this->jobType === 'standalone' ? null : $this->plate,
+                'vehicle_category_id' => $category?->id,
                 'make_id' => $make?->id,
                 'model_id' => $model?->id,
                 'total_amount' => $total,
@@ -358,10 +404,10 @@ class NewWashJob extends Page
 
         Notification::make()->title('Wash job recorded')->success()->send();
         $this->reset([
-            'plate', 'plateScanId', 'plateConfidence', 'plateConfirmed',
+            'jobType', 'plate', 'plateScanId', 'plateConfidence', 'plateConfirmed', 'localPlateScanned',
             'vehicleCategoryId', 'makeId', 'modelId', 'clientSearch',
             'clientId', 'createClient', 'clientName', 'clientPhone', 'clientEmail',
-            'selectedServices', 'selectedWorkers', 'workerShares',
+            'selectedServices', 'selectedWorkers', 'workerToAdd', 'workerShares',
             'paymentReference', 'notes', 'photo',
         ]);
         $this->paymentMethod = 'cash';
@@ -387,7 +433,9 @@ class NewWashJob extends Page
     {
         return VehicleCategory::query()->where(function ($query): void {
             $query->whereNull('tenant_id')->orWhere('tenant_id', auth()->user()->tenant_id);
-        });
+        })->when(Tenant::withoutGlobalScopes()->findOrFail(auth()->user()->tenant_id)->service_pricing_mode === 'ghanaian', fn ($query) => $query->whereHas('servicePrices', fn ($prices) => $prices
+            ->withoutGlobalScopes()->where('tenant_id', auth()->user()->tenant_id)->where('pricing_system', 'ghanaian')->where('is_active', true)
+            ->whereHas('service', fn ($service) => $service->where('is_active', true))));
     }
 
     private function availableMakes()
@@ -414,19 +462,20 @@ class NewWashJob extends Page
 
     private function servicesForCategory()
     {
-        if (! $this->vehicleCategoryId) {
+        if ($this->jobType === 'vehicle' && ! $this->vehicleCategoryId) {
             return collect();
         }
 
         $prices = ServicePrice::withoutGlobalScopes()
             ->with('service')
+            ->where('pricing_system', $this->jobType === 'standalone' ? 'standalone' : Tenant::withoutGlobalScopes()->findOrFail(auth()->user()->tenant_id)->service_pricing_mode)
             ->where('tenant_id', auth()->user()->tenant_id)
-            ->where('vehicle_category_id', $this->vehicleCategoryId)
+            ->where('vehicle_category_id', $this->jobType === 'standalone' ? null : $this->vehicleCategoryId)
             ->where('is_active', true)
             ->get()
             ->keyBy('service_id');
 
-        return Service::query()->where('is_active', true)
+        return Service::query()->where('is_active', true)->whereIn('id', $prices->keys())
             ->where(function ($query): void {
                 $query->where('is_global', true)->orWhere('tenant_id', auth()->user()->tenant_id);
             })
@@ -436,9 +485,9 @@ class NewWashJob extends Page
                 return [
                     'id' => $service->id,
                     'name' => $service->name,
-                    'price' => (float) ($price?->price ?? $service->default_price),
-                    'worker_pct' => (float) ($price?->worker_pct ?? $service->worker_pct),
-                    'company_pct' => (float) ($price?->company_pct ?? $service->company_pct),
+                    'price' => (float) $price->price,
+                    'worker_pct' => (float) $price->worker_pct,
+                    'company_pct' => (float) $price->company_pct,
                 ];
             });
     }
@@ -473,7 +522,7 @@ class NewWashJob extends Page
 
     private function breakdown(): array
     {
-        $items = $this->vehicleCategoryId
+        $items = $this->jobType === 'standalone' || $this->vehicleCategoryId
             ? $this->pricedItems()
             : [];
         $total = array_sum(array_column($items, 'total_amount'));
@@ -504,6 +553,7 @@ class NewWashJob extends Page
     private function synchronizeWorkerShares(): void
     {
         $selected = array_unique(array_map('intval', $this->selectedWorkers));
+        sort($selected);
         $share = (float) $this->breakdown()['worker'];
         $base = count($selected) ? floor(($share / count($selected)) * 100) / 100 : 0;
         $this->workerShares = [];
@@ -514,18 +564,19 @@ class NewWashJob extends Page
         }
     }
 
-    private function validatedShares(array $workerIds, float $totalShare): array
+    private function companyWorkerShares(array $workerIds, float $totalShare): array
     {
+        sort($workerIds);
+        $base = count($workerIds) ? floor(($totalShare / count($workerIds)) * 100) / 100 : 0;
         $shares = [];
-        foreach ($workerIds as $id) {
-            $share = filter_var($this->workerShares[$id] ?? 0, FILTER_VALIDATE_FLOAT);
-            if ($share === false || $share <= 0 || round($share, 2) !== (float) $share) {
-                throw ValidationException::withMessages(['workerShares' => 'Each assigned worker must receive a positive share with up to two decimal places.']);
+        foreach ($workerIds as $index => $id) {
+            $share = $index === count($workerIds) - 1
+                ? round($totalShare - $base * (count($workerIds) - 1), 2)
+                : $base;
+            if ($share <= 0) {
+                throw ValidationException::withMessages(['selectedWorkers' => 'The company worker share is too small for this many workers. Assign fewer workers.']);
             }
-            $shares[$id] = round((float) $share, 2);
-        }
-        if (abs(array_sum($shares) - $totalShare) > 0.01) {
-            throw ValidationException::withMessages(['workerShares' => 'Worker shares must add up to the worker share shown in the breakdown.']);
+            $shares[$id] = $share;
         }
 
         return $shares;
